@@ -618,7 +618,7 @@ class Abstract_Wallet(PrintError):
                 if _type == TYPE_ADDRESS:
                     addr = x
                 elif _type == TYPE_PUBKEY:
-                    addr = bitcoin.public_key_to_p2pkh(x.decode('hex'))
+                    addr = stratis.public_key_to_p2pkh(x.decode('hex'))
                 else:
                     addr = None
                 if addr and self.is_mine(addr):
@@ -1405,7 +1405,6 @@ class Imported_Wallet(Abstract_Wallet):
         txin['type'] = 'unknown'
 
 
-<<<<<<< HEAD
 class P2PKH_Wallet(Abstract_Wallet):
 
     def pubkeys_to_address(self, pubkey):
@@ -1450,8 +1449,6 @@ class P2PKH_Wallet(Abstract_Wallet):
     def decrypt_message(self, pubkey, message, password):
         index = self.get_pubkey_index(pubkey)
         return self.keystore.decrypt_message(index, message, password)
-=======
->>>>>>> upstream/master
 
 
 class Deterministic_Wallet(Abstract_Wallet):
@@ -1606,7 +1603,7 @@ class Simple_Wallet(Abstract_Wallet):
         txin['signatures'] = [None]
 
         addrtype, hash160 = bc_address_to_hash_160(address)
-        if addrtype == bitcoin.ADDRTYPE_P2SH:
+        if addrtype == stratis.ADDRTYPE_P2SH:
             txin['redeemScript'] = self.pubkeys_to_redeem_script(pubkey)
             txin['type'] = 'p2wpkh-p2sh'
         else:
@@ -1692,7 +1689,7 @@ class P2SH:
 
     def pubkeys_to_address(self, pubkey):
         redeem_script = self.pubkeys_to_redeem_script(pubkey)
-        return bitcoin.hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
+        return stratis.hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
 
 
 class Standard_Wallet(Simple_Deterministic_Wallet):
@@ -1704,10 +1701,10 @@ class Standard_Wallet(Simple_Deterministic_Wallet):
 
     def pubkeys_to_address(self, pubkey):
         if not self.is_segwit:
-            return bitcoin.public_key_to_p2pkh(pubkey.decode('hex'))
-        elif bitcoin.TESTNET:
+            return stratis.public_key_to_p2pkh(pubkey.decode('hex'))
+        elif stratis.TESTNET:
             redeem_script = self.pubkeys_to_redeem_script(pubkey)
-            return bitcoin.hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
+            return stratis.hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
         else:
             raise NotImplementedError()
 

@@ -359,14 +359,9 @@ class BaseWizard(object):
         self.on_keystore(k)
 
     def create_seed(self):
-<<<<<<< HEAD
-        from electrum_stratis.mnemonic import Mnemonic
-        seed = Mnemonic('en').make_seed()
-=======
         import mnemonic
-        self.seed_type = 'segwit' if bitcoin.TESTNET and self.config.get('segwit') else 'standard'
+        self.seed_type = 'segwit' if stratis.TESTNET and self.config.get('segwit') else 'standard'
         seed = mnemonic.Mnemonic('en').make_seed(self.seed_type)
->>>>>>> upstream/master
         self.opt_bip39 = False
         f = lambda x: self.request_passphrase(seed, x)
         self.show_seed_dialog(run_next=f, seed_text=seed)

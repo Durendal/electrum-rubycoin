@@ -2,6 +2,7 @@
   * Segregated Witness support (testnet only).
   * Child Pays For Parent (CPFP) dialog in the GUI.
   * Plugin for Digital Bitbox hardware.
+  * Stratis: add Ledger support
 
 # Release 2.7.18
   * enforce https on exchange rate APIs

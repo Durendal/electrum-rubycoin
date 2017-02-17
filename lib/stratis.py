@@ -41,8 +41,8 @@ TESTNET = False
 ADDRTYPE_P2PKH = 63
 ADDRTYPE_P2SH = 125
 ADDRTYPE_P2WPKH = 6
-XPRV_HEADER = "0488b2dd"
-XPUB_HEADER = "0488c21e"
+XPRV_HEADER = 0x0488b2dd
+XPUB_HEADER = 0x0488c21e
 HEADERS_URL = "http://seed.stratisplatform.com/blockchain_headers"
 
 def set_testnet():
@@ -53,8 +53,8 @@ def set_testnet():
     ADDRTYPE_P2PKH = 111
     ADDRTYPE_P2SH = 196
     ADDRTYPE_P2WPKH = 3
-    XPRV_HEADER = "04358394"
-    XPUB_HEADER = "043587cf"
+    XPRV_HEADER = 0x04358394
+    XPUB_HEADER = 0x043587cf
     HEADERS_URL = "http://seed.stratisplatform.com/blockchain_headers_testnet"
 
 ################################## transactions
@@ -334,13 +334,15 @@ def PrivKeyToSecret(privkey):
     return privkey[9:9+32]
 
 
-def SecretToASecret(secret, compressed=False, addrtype=63):
+def SecretToASecret(secret, compressed=False):
+    addrtype = ADDRTYPE_P2PKH
     vchIn = chr((addrtype+128)&255) + secret
     if compressed: vchIn += '\01'
     return EncodeBase58Check(vchIn)
 
 
-def ASecretToSecret(key, addrtype=63):
+def ASecretToSecret(key):
+    addrtype = ADDRTYPE_P2PKH
     vch = DecodeBase58Check(key)
     if vch and vch[0] == chr((addrtype+128)&255):
         return vch[1:]
@@ -395,7 +397,7 @@ def is_address(addr):
         addrtype, h = bc_address_to_hash_160(addr)
     except Exception:
         return False
-    if addrtype not in [63, 125]:
+    if addrtype not in [ADDRTYPE_P2PKH, ADDRTYPE_P2SH]:
         return False
     return addr == hash_160_to_bc_address(h, addrtype)
 
