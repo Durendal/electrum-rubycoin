@@ -450,7 +450,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         wallet_menu.addAction(_("&Export History"), self.export_history_dialog)
         wallet_menu.addAction(_("Find"), self.toggle_search).setShortcut(QKeySequence("Ctrl+F"))
         wallet_menu.addAction(_("Addresses"), self.toggle_addresses_tab).setShortcut(QKeySequence("Ctrl+A"))
-        wallet_menu.addAction(_("Coins"), self.toggle_utxo_tab).setShortcut(QKeySequence("Ctrl+C"))
+        wallet_menu.addAction(_("Coins"), self.toggle_utxo_tab)
 
         tools_menu = menubar.addMenu(_("&Tools"))
 
@@ -1339,7 +1339,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 return False, _("Payment request has expired")
             status, msg =  self.network.broadcast(tx)
             if pr and status is True:
-                pr.set_paid(tx.hash())
+                pr.set_paid(tx.txid())
                 self.invoices.save()
                 self.payment_request = None
                 refund_address = self.wallet.get_receiving_addresses()[0]
@@ -1357,7 +1357,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 status, msg = result
                 if status:
                     if tx_desc is not None and tx.is_complete():
-                        self.wallet.set_label(tx.hash(), tx_desc)
+                        self.wallet.set_label(tx.txid(), tx_desc)
                     parent.show_message(_('Payment sent.') + '\n' + msg)
                     self.invoice_list.update()
                     self.do_clear()
@@ -1474,6 +1474,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def set_frozen_state(self, addrs, freeze):
         self.wallet.set_frozen_state(addrs, freeze)
         self.address_list.update()
+        self.utxo_list.update()
         self.update_fee()
 
     def create_list_tab(self, l):
@@ -1706,15 +1707,15 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def do_search(self, t):
         i = self.tabs.currentIndex()
         if i == 0:
-            self.history_list.filter(t, [2, 3, 4])  # Date, Description, Amount
+            self.history_list.filter(t)
         elif i == 1:
-            self.invoice_list.filter(t, [0, 1, 2, 3]) # Date, Requestor, Description, Amount
+            self.invoice_list.filter(t)
         elif i == 2:
-            self.request_list.filter(t, [0, 1, 2, 3, 4]) # Date, Account, Address, Description, Amount
+            self.request_list.filter(t)
         elif i == 3:
-            self.address_list.filter(t, [0,1, 2])  # Address, Label, Balance
+            self.address_list.filter(t)
         elif i == 4:
-            self.contact_list.filter(t, [0, 1])  # Key, Value
+            self.contact_list.filter(t)
 
 
     def new_contact_dialog(self):
@@ -2012,6 +2013,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 file_content = f.read()
         except (ValueError, IOError, os.error) as reason:
             self.show_critical(_("Electrum was unable to open your transaction file") + "\n" + str(reason), title=_("Unable to read file or no transaction found"))
+            return
         return self.tx_from_text(file_content)
 
     def do_process_from_text(self):
@@ -2559,7 +2561,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         ex_combo = QComboBox()
 
         def update_currencies():
-            currencies = sorted(self.fx.exchanges_by_ccy.keys())
+            currencies = sorted(self.fx.get_currencies(self.fx.get_history_config()))
             ccy_combo.clear()
             ccy_combo.addItems([_('None')] + currencies)
             if self.fx.is_enabled():
@@ -2577,7 +2579,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 c = self.fx.get_currency()
                 exchanges = self.fx.get_exchanges_by_ccy(c, h)
             else:
-                exchanges = self.fx.exchanges.keys()
+                exchanges = self.fx.get_exchanges_by_ccy('USD', False)
             ex_combo.clear()
             ex_combo.addItems(sorted(exchanges))
             ex_combo.setCurrentIndex(ex_combo.findText(self.fx.config_exchange()))
@@ -2594,11 +2596,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         def on_exchange(idx):
             exchange = str(ex_combo.currentText())
-            if self.fx.is_enabled() and exchange != self.fx.exchange.name():
+            if self.fx.is_enabled() and exchange and exchange != self.fx.exchange.name():
                 self.fx.set_exchange(exchange)
 
         def on_history(checked):
             self.fx.set_history_config(checked)
+            update_exchanges()
             self.history_list.refresh_headers()
             if self.fx.is_enabled() and checked:
                 # reset timeout to get historical rates
@@ -2747,6 +2750,33 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         vbox.addLayout(Buttons(CloseButton(d)))
         d.exec_()
 
+    def cpfp(self, parent_tx, new_tx):
+        total_size = parent_tx.estimated_size() + new_tx.estimated_size()
+        d = WindowModalDialog(self, _('Child Pays for Parent'))
+        vbox = QVBoxLayout(d)
+        vbox.addWidget(QLabel(_('Total size') + ': %d bytes'% total_size))
+        max_fee = new_tx.output_value()
+        vbox.addWidget(QLabel(_('Max fee') + ': %s'% self.format_amount(max_fee) + ' ' + self.base_unit()))
+        vbox.addWidget(QLabel(_('Child fee' + ':')))
+        fee_e = BTCAmountEdit(self.get_decimal_point)
+        fee = self.config.fee_per_kb() * total_size / 1000
+        fee_e.setAmount(fee)
+        vbox.addWidget(fee_e)
+        def on_rate(dyn, pos, fee_rate):
+            fee = fee_rate * total_size / 1000
+            fee_e.setAmount(min(max_fee, fee))
+        fee_slider = FeeSlider(self, self.config, on_rate)
+        vbox.addWidget(fee_slider)
+        vbox.addLayout(Buttons(CancelButton(d), OkButton(d)))
+        if not d.exec_():
+            return
+        fee = fee_e.get_amount()
+        if fee > max_fee:
+            self.show_error(_('Max fee exceeded'))
+            return
+        new_tx = self.wallet.cpfp(parent_tx, fee)
+        new_tx.set_sequence(0)
+        self.show_transaction(new_tx)
 
     def bump_fee_dialog(self, tx):
         is_relevant, is_mine, v, fee = self.wallet.get_wallet_delta(tx)

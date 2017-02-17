@@ -166,7 +166,7 @@ class Commands:
     def listunspent(self):
         """List unspent outputs. Returns the list of unspent transaction
         outputs in your wallet."""
-        l = copy.deepcopy(self.wallet.get_spendable_coins(exclude_frozen = False))
+        l = copy.deepcopy(self.wallet.get_utxos(exclude_frozen=False))
         for i in l:
             v = i["value"]
             i["value"] = float(v)/COIN if v is not None else None
@@ -747,6 +747,7 @@ def get_parser():
     group.add_argument("-P", "--portable", action="store_true", dest="portable", default=False, help="Use local 'electrum-stratis_data' directory")
     group.add_argument("-w", "--wallet", dest="wallet_path", help="wallet path")
     group.add_argument("--testnet", action="store_true", dest="testnet", default=False, help="Use Testnet")
+    group.add_argument("--segwit", action="store_true", dest="segwit", default=False, help="The Wizard will create Segwit seed phrases (Testnet only).")
     # create main parser
     parser = argparse.ArgumentParser(
         parents=[parent_parser],

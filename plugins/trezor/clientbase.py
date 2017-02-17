@@ -151,10 +151,7 @@ class TrezorClientBase(GuiMixin, PrintError):
         address_n = self.expand_path(bip32_path)
         creating = False #self.next_account_number() == 0
         node = self.get_public_node(address_n, creating).node
-        xpub = ("0488B21E".decode('hex') + chr(node.depth)
-                + self.i4b(node.fingerprint) + self.i4b(node.child_num)
-                + node.chain_code + node.public_key)
-        return EncodeBase58Check(xpub)
+        return serialize_xpub(0, node.chain_code, node.public_key, node.depth, self.i4b(node.fingerprint), self.i4b(node.child_num))
 
     #def address_from_derivation(self, derivation):
     #    return self.get_address('Stratis', self.expand_path(derivation))

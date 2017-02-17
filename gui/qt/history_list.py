@@ -49,6 +49,7 @@ TX_ICONS = [
 
 
 class HistoryList(MyTreeWidget):
+    filter_columns = [2, 3, 4]  # Date, Description, Amount
 
     def __init__(self, parent=None):
         MyTreeWidget.__init__(self, parent, self.create_menu, [], 3)
@@ -142,7 +143,7 @@ class HistoryList(MyTreeWidget):
         height, conf, timestamp = self.wallet.get_tx_height(tx_hash)
         tx = self.wallet.transactions.get(tx_hash)
         is_relevant, is_mine, v, fee = self.wallet.get_wallet_delta(tx)
-        rbf = is_mine and height <=0 and tx and not tx.is_final()
+        is_unconfirmed = height <= 0
         menu = QMenu()
 
         menu.addAction(_("Copy %s")%column_title, lambda: self.parent.app.clipboard().setText(column_data))
@@ -150,8 +151,14 @@ class HistoryList(MyTreeWidget):
             menu.addAction(_("Edit %s")%column_title, lambda: self.editItem(item, column))
 
         menu.addAction(_("Details"), lambda: self.parent.show_transaction(tx))
-        if rbf:
-            menu.addAction(_("Increase fee"), lambda: self.parent.bump_fee_dialog(tx))
+        if is_unconfirmed and tx:
+            rbf = is_mine and not tx.is_final()
+            if rbf:
+                menu.addAction(_("Increase fee"), lambda: self.parent.bump_fee_dialog(tx))
+            else:
+                child_tx = self.wallet.cpfp(tx, 0)
+                if child_tx:
+                    menu.addAction(_("Child pays for parent"), lambda: self.parent.cpfp(tx, child_tx))
         if tx_URL:
             menu.addAction(_("View on block explorer"), lambda: webbrowser.open(tx_URL))
         menu.exec_(self.viewport().mapToGlobal(position))

@@ -29,7 +29,7 @@ class Test_stratis(unittest.TestCase):
         Pub = pvk*G
         pubkey_c = point_to_ser(Pub,True)
         #pubkey_u = point_to_ser(Pub,False)
-        addr_c = public_key_to_bc_address(pubkey_c)
+        addr_c = public_key_to_p2pkh(pubkey_c)
         #addr_u = public_key_to_bc_address(pubkey_u)
 
         #print "Private key            ", '%064x'%pvk
@@ -60,7 +60,7 @@ class Test_stratis(unittest.TestCase):
         assert xprv == "xprvA2nrNbFZABcdryreWet9Ea4LvTJcGsqrMzxHx98MMrotbir7yrKCEXw7nadnHM8Dq38EGfSh6dqA9QWTyefMLEcBYJUuekgW4BYPJcr9E7j"
 
     def _do_test_bip32(self, seed, sequence):
-        xprv, xpub = bip32_root(seed.decode('hex'))
+        xprv, xpub = bip32_root(seed.decode('hex'), 0)
         assert sequence[0:2] == "m/"
         path = 'm'
         sequence = sequence[2:]

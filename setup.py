@@ -36,7 +36,7 @@ setup(
     name="Electrum-Stratis",
     version=version.ELECTRUM_VERSION,
     install_requires=[
-        'slowaes>=0.1a1',
+        'pyaes',
         'ecdsa>=0.9',
         'pbkdf2',
         'requests',
@@ -60,6 +60,7 @@ setup(
         'electrum_stratis_plugins.ledger',
         'electrum_stratis_plugins.plot',
         'electrum_stratis_plugins.trezor',
+        'electrum_stratis_plugins.digitalbitbox',
         'electrum_stratis_plugins.virtualkeyboard',
     ],
     package_dir={
@@ -69,6 +70,7 @@ setup(
     },
     package_data={
         'electrum_stratis': [
+            'currencies.json',
             'www/index.html',
             'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',

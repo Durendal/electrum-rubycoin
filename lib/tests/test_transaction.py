@@ -55,7 +55,8 @@ class TestTransaction(unittest.TestCase):
     def test_tx_unsigned(self):
         expected = {
             'inputs': [{
-                'address': 'LNH44gMp6kNHu4Npo5JDNY6FPjewvMKDnz',
+                'type': 'p2pkh',
+                'address': '1446oU3z268EeFgfcwJv6X2VBXHfoYxfuD',
                 'is_coinbase': False,
                 'num_sig': 1,
                 'prevout_hash': '3140eb24b43386f35ba69e3875eb6c93130ac66201d01c58f598defc949a5c2a',
@@ -102,7 +103,8 @@ class TestTransaction(unittest.TestCase):
     def test_tx_signed(self):
         expected = {
             'inputs': [{
-                'address': 'LNH44gMp6kNHu4Npo5JDNY6FPjewvMKDnz',
+                'type': 'p2pkh',
+                'address': '1446oU3z268EeFgfcwJv6X2VBXHfoYxfuD',
                 'is_coinbase': False,
                 'num_sig': 1,
                 'prevout_hash': '3140eb24b43386f35ba69e3875eb6c93130ac66201d01c58f598defc949a5c2a',
@@ -142,8 +144,8 @@ class TestTransaction(unittest.TestCase):
         res = xpubkey_to_address('fe4e13b0f311a55b8a5db9a32e959da9f011b131019d4cebe6141b9e2c93edcbfc0954c358b062a9f94111548e50bde5847a3096b8b7872dcffadb0e9579b9017b01000200')
         self.assertEquals(res, ('04ee98d63800824486a1cf5b4376f2f574d86e0a3009a6448105703453f3368e8e1d8d090aaecdd626a45cc49876709a3bbb6dc96a4311b3cac03e225df5f63dfc', 'LTv6KFwtiNafLvxggFFQMRSQEXtBUru9eG'))
 
-        res = xpubkey_to_address('fd307d260305ef27224bbcf6cf5238d2b3638b5a78d5')
-        self.assertEquals(res, (None, 'LWdgGJGqSmaGYcp6e21RvpGmcuexJorNEH'))
+        res = xpubkey_to_address('fd007d260305ef27224bbcf6cf5238d2b3638b5a78d5')
+        self.assertEquals(res, ('fd007d260305ef27224bbcf6cf5238d2b3638b5a78d5', '1CQj15y1N7LDHp7wTt28eoD1QhHgFgxECH'))
 
 
 class NetworkMock(object):

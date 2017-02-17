@@ -34,6 +34,7 @@ from electrum_stratis.stratis import is_address
 
 
 class AddressList(MyTreeWidget):
+    filter_columns = [0, 1, 2]  # Address, Label, Balance
 
     def __init__(self, parent=None):
         MyTreeWidget.__init__(self, parent, self.create_menu, [ _('Address'), _('Label'), _('Balance'), _('Tx')], 1)
@@ -123,11 +124,6 @@ class AddressList(MyTreeWidget):
             addr_URL = block_explorer_URL(self.config, 'addr', addr)
             if addr_URL:
                 menu.addAction(_("View on block explorer"), lambda: webbrowser.open(addr_URL))
-
-        if any(not self.wallet.is_frozen(addr) for addr in addrs):
-            menu.addAction(_("Freeze"), lambda: self.parent.set_frozen_state(addrs, True))
-        if any(self.wallet.is_frozen(addr) for addr in addrs):
-            menu.addAction(_("Unfreeze"), lambda: self.parent.set_frozen_state(addrs, False))
 
         run_hook('receive_menu', menu, addrs, self.wallet)
         menu.exec_(self.viewport().mapToGlobal(position))

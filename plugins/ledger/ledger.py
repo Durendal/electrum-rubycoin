@@ -87,11 +87,6 @@ class Ledger_Client():
         except Exception, e:
             #self.give_error(e, True)
             return None
-        finally:
-            #self.handler.clear_dialog()
-            pass
-
-        return EncodeBase58Check(xpub)
 
     def has_detached_pin_support(self, client):
         try:
@@ -197,6 +192,9 @@ class Ledger_KeyStore(Hardware_KeyStore):
         return self.plugin.get_client(self)
     
     def get_client(self):
+        return self.plugin.get_client(self).dongleObject
+    
+    def get_client_electrum(self):
         return self.plugin.get_client(self)
     
     def give_error(self, message, clear_client = False):
@@ -326,7 +324,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
         if not p2shTransaction:
             if not self.get_client_electrum().supports_multi_output():
                 if len(tx.outputs()) > 2:
-                     self.give_error("Transaction with more than 2 outputs not supported")
+                    self.give_error("Transaction with more than 2 outputs not supported")
             for _type, address, amount in tx.outputs():
                 assert _type == TYPE_ADDRESS
                 info = tx.output_info.get(address)

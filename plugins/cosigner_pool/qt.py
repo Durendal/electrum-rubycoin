@@ -128,9 +128,9 @@ class Plugin(BasePlugin):
         self.cosigner_list = []
         for key, keystore in wallet.keystores.items():
             xpub = keystore.get_master_public_key()
-            K = stratis.deserialize_xkey(xpub)[-1].encode('hex')
+            K = stratis.deserialize_xpub(xpub)[-1].encode('hex')
             _hash = stratis.Hash(K).encode('hex')
-            if wallet.master_private_keys.get(key):
+            if not keystore.is_watching_only():
                 self.keys.append((key, _hash, window))
             else:
                 self.cosigner_list.append((window, xpub, K, _hash))
@@ -202,8 +202,13 @@ class Plugin(BasePlugin):
         if not xprv:
             return
         try:
+<<<<<<< HEAD
             k = stratis.deserialize_xkey(xprv)[-1].encode('hex')
             EC = stratis.EC_KEY(k.decode('hex'))
+=======
+            k = bitcoin.deserialize_xprv(xprv)[-1].encode('hex')
+            EC = bitcoin.EC_KEY(k.decode('hex'))
+>>>>>>> upstream/master
             message = EC.decrypt_message(message)
         except Exception as e:
             traceback.print_exc(file=sys.stdout)

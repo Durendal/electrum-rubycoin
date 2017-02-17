@@ -52,6 +52,7 @@ from version import *
 from keystore import load_keystore, Hardware_KeyStore
 from storage import multisig_type
 
+import transaction
 from transaction import Transaction
 from plugins import run_hook
 import stratis
@@ -435,8 +436,8 @@ class Abstract_Wallet(PrintError):
         can_bump = False
         label = ''
         height = conf = timestamp = None
+        tx_hash = tx.txid()
         if tx.is_complete():
-            tx_hash = tx.hash()
             if tx_hash in self.transactions.keys():
                 label = self.get_label(tx_hash)
                 height, conf, timestamp = self.get_tx_height(tx_hash)
@@ -460,7 +461,6 @@ class Abstract_Wallet(PrintError):
         else:
             s, r = tx.signature_count()
             status = _("Unsigned") if s == 0 else _('Partially signed') + ' (%d/%d)'%(s,r)
-            tx_hash = None
 
         if is_relevant:
             if is_mine:
@@ -618,7 +618,7 @@ class Abstract_Wallet(PrintError):
                 if _type == TYPE_ADDRESS:
                     addr = x
                 elif _type == TYPE_PUBKEY:
-                    addr = public_key_to_bc_address(x.decode('hex'))
+                    addr = bitcoin.public_key_to_p2pkh(x.decode('hex'))
                 else:
                     addr = None
                 if addr and self.is_mine(addr):
@@ -881,7 +881,7 @@ class Abstract_Wallet(PrintError):
             pubkey = public_key_from_private_key(privkey)
             address = address_from_private_key(privkey)
             u = network.synchronous_get(('blockchain.address.listunspent', [address]))
-            pay_script = Transaction.pay_script(TYPE_ADDRESS, address)
+            pay_script = transaction.get_scriptPubKey(address)
             for item in u:
                 if len(inputs) >= imax:
                     break
@@ -1042,6 +1042,25 @@ class Abstract_Wallet(PrintError):
                     continue
         if delta > 0:
             raise BaseException(_('Cannot bump fee: cound not find suitable outputs'))
+        return Transaction.from_io(inputs, outputs)
+
+    def cpfp(self, tx, fee):
+        txid = tx.txid()
+        for i, o in enumerate(tx.outputs()):
+            otype, address, value = o
+            if otype == TYPE_ADDRESS and self.is_mine(address):
+                break
+        else:
+            return
+        coins = self.get_addr_utxo(address)
+        for item in coins:
+            if item['prevout_hash'] == txid and item['prevout_n'] == i:
+                break
+        else:
+            return
+        self.add_input_info(item)
+        inputs = [item]
+        outputs = [(TYPE_ADDRESS, address, value - fee)]
         return Transaction.from_io(inputs, outputs)
 
     def add_input_info(self, txin):
@@ -1383,8 +1402,10 @@ class Imported_Wallet(Abstract_Wallet):
         txin['x_pubkeys'] = [ xpubkey ]
         txin['pubkeys'] = [ xpubkey ]
         txin['signatures'] = [None]
+        txin['type'] = 'unknown'
 
 
+<<<<<<< HEAD
 class P2PKH_Wallet(Abstract_Wallet):
 
     def pubkeys_to_address(self, pubkey):
@@ -1429,6 +1450,8 @@ class P2PKH_Wallet(Abstract_Wallet):
     def decrypt_message(self, pubkey, message, password):
         index = self.get_pubkey_index(pubkey)
         return self.keystore.decrypt_message(index, message, password)
+=======
+>>>>>>> upstream/master
 
 
 class Deterministic_Wallet(Abstract_Wallet):
@@ -1485,7 +1508,7 @@ class Deterministic_Wallet(Abstract_Wallet):
         # fixme: this assumes wallet is synchronized
         n = 0
         nmax = 0
-        addresses = self.account.get_receiving_addresses()
+        addresses = self.get_receiving_addresses()
         k = self.num_unused_trailing_addresses(addresses)
         for a in addresses[0:-k]:
             if self.history.get(a):
@@ -1554,8 +1577,54 @@ class Deterministic_Wallet(Abstract_Wallet):
 
 
 
-class Standard_Wallet(Deterministic_Wallet, P2PKH_Wallet):
-    wallet_type = 'standard'
+class Simple_Wallet(Abstract_Wallet):
+
+    """ Wallet with a single pubkey per address """
+
+    def load_keystore(self):
+        self.keystore = load_keystore(self.storage, 'keystore')
+        self.is_segwit = self.keystore.is_segwit()
+
+    def get_pubkey(self, c, i):
+        pubkey_list = self.change_pubkeys if c else self.receiving_pubkeys
+        return pubkey_list[i]
+
+    def get_public_keys(self, address):
+        return [self.get_public_key(address)]
+
+    def add_input_sig_info(self, txin, address):
+        if not self.keystore.can_import():
+            txin['derivation'] = derivation = self.get_address_index(address)
+            x_pubkey = self.keystore.get_xpubkey(*derivation)
+            pubkey = self.get_pubkey(*derivation)
+        else:
+            pubkey = self.get_public_key(address)
+            assert pubkey is not None
+            x_pubkey = pubkey
+        txin['x_pubkeys'] = [x_pubkey]
+        txin['pubkeys'] = [pubkey]
+        txin['signatures'] = [None]
+
+        addrtype, hash160 = bc_address_to_hash_160(address)
+        if addrtype == bitcoin.ADDRTYPE_P2SH:
+            txin['redeemScript'] = self.pubkeys_to_redeem_script(pubkey)
+            txin['type'] = 'p2wpkh-p2sh'
+        else:
+            txin['redeemPubkey'] = pubkey
+            txin['type'] = 'p2pkh'
+
+        txin['num_sig'] = 1
+
+    def sign_message(self, address, message, password):
+        index = self.get_address_index(address)
+        return self.keystore.sign_message(index, message, password)
+
+    def decrypt_message(self, pubkey, message, password):
+        index = self.get_pubkey_index(pubkey)
+        return self.keystore.decrypt_message(index, message, password)
+
+
+class Simple_Deterministic_Wallet(Deterministic_Wallet, Simple_Wallet):
 
     def __init__(self, storage):
         Deterministic_Wallet.__init__(self, storage)
@@ -1616,7 +1685,37 @@ class Standard_Wallet(Deterministic_Wallet, P2PKH_Wallet):
         return addr
 
 
-class Multisig_Wallet(Deterministic_Wallet):
+class P2SH:
+
+    def pubkeys_to_redeem_script(self, pubkeys):
+        raise NotImplementedError()
+
+    def pubkeys_to_address(self, pubkey):
+        redeem_script = self.pubkeys_to_redeem_script(pubkey)
+        return bitcoin.hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
+
+
+class Standard_Wallet(Simple_Deterministic_Wallet):
+    wallet_type = 'standard'
+
+    def pubkeys_to_redeem_script(self, pubkey):
+        if self.is_segwit:
+            return transaction.segwit_script(pubkey)
+
+    def pubkeys_to_address(self, pubkey):
+        if not self.is_segwit:
+            return bitcoin.public_key_to_p2pkh(pubkey.decode('hex'))
+        elif bitcoin.TESTNET:
+            redeem_script = self.pubkeys_to_redeem_script(pubkey)
+            return bitcoin.hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
+        else:
+            raise NotImplementedError()
+
+
+
+
+
+class Multisig_Wallet(Deterministic_Wallet, P2SH):
     # generic m of n
     gap_limit = 20
 
@@ -1631,12 +1730,15 @@ class Multisig_Wallet(Deterministic_Wallet):
 
     def redeem_script(self, c, i):
         pubkeys = self.get_pubkeys(c, i)
-        return Transaction.multisig_script(sorted(pubkeys), self.m)
+        return transaction.multisig_script(sorted(pubkeys), self.m)
 
     def pubkeys_to_address(self, pubkeys):
         redeem_script = Transaction.multisig_script(sorted(pubkeys), self.m)
         address = hash_160_to_bc_address(hash_160(redeem_script.decode('hex')), stratis.ADDRTYPE_P2SH)
         return address
+
+    def pubkeys_to_redeem_script(self, pubkeys):
+        return transaction.multisig_script(sorted(pubkeys), self.m)
 
     def new_pubkeys(self, c, i):
         return [k.derive_pubkey(c, i) for k in self.get_keystores()]
@@ -1692,6 +1794,7 @@ class Multisig_Wallet(Deterministic_Wallet):
         x_pubkeys = [k.get_xpubkey(*derivation) for k in self.get_keystores()]
         # sort pubkeys and x_pubkeys, using the order of pubkeys
         pubkeys, x_pubkeys = zip(*sorted(zip(pubkeys, x_pubkeys)))
+        txin['type'] = 'p2sh'
         txin['pubkeys'] = list(pubkeys)
         txin['x_pubkeys'] = list(x_pubkeys)
         txin['signatures'] = [None] * len(pubkeys)

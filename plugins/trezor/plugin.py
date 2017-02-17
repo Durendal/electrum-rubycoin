@@ -29,7 +29,7 @@ class TrezorCompatibleKeyStore(Hardware_KeyStore):
 
     def decrypt_message(self, pubkey, message, password):
         raise RuntimeError(_('Electrum and %s encryption and decryption are currently incompatible') % self.device)
-        address = public_key_to_bc_address(pubkey.decode('hex'))
+        address = public_key_to_p2pkh(pubkey.decode('hex'))
         client = self.get_client()
         address_path = self.address_id(address)
         address_n = client.expand_path(address_path)
