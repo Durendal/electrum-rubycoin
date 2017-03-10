@@ -6,7 +6,8 @@ import sys
 import traceback
 
 import electrum_stratis as electrum
-from electrum_stratis.stratis import EncodeBase58Check, DecodeBase58Check, bc_address_to_hash_160, hash_160_to_bc_address, TYPE_ADDRESS, XPUB_HEADER, int_to_hex, var_int
+from electrum_stratis import stratis
+from electrum_stratis.stratis import ADDRTYPE_P2PKH, TYPE_ADDRESS, int_to_hex, var_int, bc_address_to_hash_160, hash_160_to_bc_address
 from electrum_stratis.i18n import _
 from electrum_stratis.plugins import BasePlugin, hook
 from electrum_stratis.keystore import Hardware_KeyStore, parse_xpubkey
@@ -83,9 +84,10 @@ class Ledger_Client():
                 childnum = int(lastChild[0])
             else:
                 childnum = 0x80000000 | int(lastChild[0])
-            xpub = "0488C21E".decode('hex') + chr(depth) + self.i4b(fingerprint) + self.i4b(childnum) + str(nodeData['chainCode']) + str(publicKey)
-        except Exception, e:
-            #self.give_error(e, True)
+            xpub = stratis.serialize_xpub(0, str(nodeData['chainCode']), str(publicKey), depth, self.i4b(fingerprint), self.i4b(childnum))
+            return xpub
+        except Exception as e:
+            print_error(e)
             return None
 
     def has_detached_pin_support(self, client):
@@ -183,13 +185,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
         return obj
 
     def get_derivation(self):
-        return self.derivation        
-
-    # def get_client(self):
-    #     return self.plugin.get_client(self).dongleObject
-
-    def get_client_electrum(self):
-        return self.plugin.get_client(self)
+        return self.derivation
     
     def get_client(self):
         return self.plugin.get_client(self).dongleObject
@@ -336,7 +332,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
                     output = address
                     if not self.get_client_electrum().supports_multi_output():
                         v, h = bc_address_to_hash_160(address)
-                        if v == 63:
+                        if v == ADDRTYPE_P2PKH:
                             output = hash_160_to_bc_address(h, 0)
                     outputAmount = amount
 
