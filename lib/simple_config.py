@@ -81,6 +81,8 @@ class SimpleConfig(PrintError):
 
         if self.get('testnet'):
             path = os.path.join(path, 'testnet')
+        elif self.get('nolnet'):
+            path = os.path.join(path, 'nolnet')
 
         # Make directory if it does not yet exist.
         if not os.path.exists(path):
@@ -88,7 +90,7 @@ class SimpleConfig(PrintError):
                 raise BaseException('Dangling link: ' + path)
             os.mkdir(path)
 
-        print_error("electrum directory", path)
+        self.print_error("electrum directory", path)
         return path
 
     def fixup_config_keys(self, config, keypairs):
@@ -213,7 +215,8 @@ class SimpleConfig(PrintError):
 
     def reverse_dynfee(self, fee_per_kb):
         import operator
-        dist = map(lambda x: (x[0], abs(x[1] - fee_per_kb)), self.fee_estimates.items())
+        l = self.fee_estimates.items() + [(1, self.dynfee(4))]
+        dist = map(lambda x: (x[0], abs(x[1] - fee_per_kb)), l)
         min_target, min_value = min(dist, key=operator.itemgetter(1))
         if fee_per_kb < self.fee_estimates.get(25)/2:
             min_target = -1
@@ -223,7 +226,7 @@ class SimpleConfig(PrintError):
         return len(self.fee_estimates)==4
 
     def is_dynfee(self):
-        return self.get('dynamic_fees') and self.has_fee_estimates()
+        return self.get('dynamic_fees', True)
 
     def fee_per_kb(self):
         dyn = self.is_dynfee()
@@ -232,6 +235,13 @@ class SimpleConfig(PrintError):
         else:
             fee_rate = self.get('fee_per_kb', self.max_fee_rate()/2)
         return fee_rate
+
+    def get_video_device(self):
+        device = self.get("video_device", "default")
+        if device == 'default':
+            device = ''
+        return device
+
 
 def read_system_config(path=SYSTEM_CONFIG_PATH):
     """Parse and return the system config settings in /etc/electrum-stratis.conf."""

@@ -1,9 +1,9 @@
 import tty, sys
 import curses, datetime, locale
 from decimal import Decimal
+import getpass
 
 from electrum_stratis.util import format_satoshis, set_verbosity
-from electrum_stratis.util import StoreDict
 from electrum_stratis.stratis import is_valid, COIN, TYPE_ADDRESS
 from electrum_stratis import Wallet, WalletStorage
 
@@ -21,10 +21,12 @@ class ElectrumGui:
         if not storage.file_exists:
             print "Wallet not found. try 'electrum-stratis create'"
             exit()
-
+        if storage.is_encrypted():
+            password = getpass.getpass('Password:', stream=None)
+            storage.decrypt(password)
         self.wallet = Wallet(storage)
         self.wallet.start_threads(self.network)
-        self.contacts = StoreDict(self.config, 'contacts')
+        self.contacts = self.wallet.contacts
 
         locale.setlocale(locale.LC_ALL, '')
         self.encoding = locale.getpreferredencoding()

@@ -367,14 +367,14 @@ class DigitalBitbox_KeyStore(Hardware_KeyStore):
                 if txin.get('is_coinbase'):
                     self.give_error("Coinbase not supported") # should never happen
                 
-                if len(txin['pubkeys']) > 1:
+                if txin['type'] in ['p2sh']:
                     p2shTransaction = True
                 
                 for x_pubkey in txin['x_pubkeys']:
                     if x_pubkey in derivations:
                         index = derivations.get(x_pubkey)
                         inputPath = "%s/%d/%d" % (self.get_derivation(), index[0], index[1])
-                        inputHash = Hash(tx.tx_for_sig(i).decode('hex')).encode('hex')
+                        inputHash = Hash(tx.serialize_preimage(i).decode('hex')).encode('hex')
                         hasharray_i = {'hash': inputHash, 'keypath': inputPath}
                         hasharray.append(hasharray_i)
                         break
@@ -384,7 +384,7 @@ class DigitalBitbox_KeyStore(Hardware_KeyStore):
             # Sanity check
             if p2shTransaction:
                 for txinput in tx.inputs():
-                    if len(txinput['pubkeys']) < 2:
+                    if txinput['type'] != 'p2sh':
                         self.give_error("P2SH / regular input mixed in same transaction not supported") # should never happen
             
             # Build pubkeyarray from outputs (unused because echo for smart verification not implemented)
@@ -431,10 +431,10 @@ class DigitalBitbox_KeyStore(Hardware_KeyStore):
                     signatures = filter(None, txin['signatures'])
                     if len(signatures) == num:
                         break # txin is complete
-                
                     ii = txin['pubkeys'].index(pubkey)
                     signed = reply['sign'][i]
-                    assert signed['pubkey'] == pubkey
+                    if signed['pubkey'] != pubkey:
+                        continue
                     sig_r = int(signed['sig'][:64], 16)
                     sig_s = int(signed['sig'][64:], 16)
                     sig = sigencode_der(sig_r, sig_s, generator_secp256k1.order())

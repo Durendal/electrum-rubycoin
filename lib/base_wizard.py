@@ -26,16 +26,16 @@
 import os
 import stratis
 import keystore
-from wallet import Wallet, Imported_Wallet, Standard_Wallet, Multisig_Wallet, WalletStorage, wallet_types
+from wallet import Wallet, Imported_Wallet, Standard_Wallet, Multisig_Wallet, wallet_types
 from i18n import _
 from plugins import run_hook
 
 class BaseWizard(object):
 
-    def __init__(self, config, path):
+    def __init__(self, config, storage):
         super(BaseWizard, self).__init__()
         self.config = config
-        self.storage = WalletStorage(path)
+        self.storage = storage
         self.wallet = None
         self.stack = []
         self.plugin = None
@@ -72,9 +72,8 @@ class BaseWizard(object):
 
     def new(self):
         name = os.path.basename(self.storage.path)
-        title = _("Welcome to the Electrum Stratis installation wizard.")
+        title = _("Create '%s'"%name)
         message = '\n'.join([
-            _("The wallet '%s' does not exist.") % name,
             _("What kind of wallet do you want to create?")
         ])
         wallet_kinds = [
@@ -303,7 +302,7 @@ class BaseWizard(object):
         k = keystore.BIP32_KeyStore({})
         bip32_seed = keystore.bip39_to_seed(seed, passphrase)
         derivation = "m/44'/105'/%d'"%account_id
-        k.add_xprv_from_seed(bip32_seed, derivation)
+        k.add_xprv_from_seed(bip32_seed, 0, derivation)
         self.on_keystore(k)
 
     def on_keystore(self, k):
@@ -329,10 +328,10 @@ class BaseWizard(object):
         if any(k.may_have_password() for k in self.keystores):
             self.request_password(run_next=self.on_password)
         else:
-            self.on_password(None)
+            self.on_password(None, False)
 
-    def on_password(self, password):
-        self.storage.put('use_encryption', bool(password))
+    def on_password(self, password, encrypt):
+        self.storage.set_password(password, encrypt)
         for k in self.keystores:
             if k.may_have_password():
                 k.update_password(None, password)

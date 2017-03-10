@@ -11,7 +11,6 @@ import electrum_stratis as electrum
 from electrum_stratis.stratis import TYPE_ADDRESS
 from electrum_stratis import WalletStorage, Wallet
 from electrum_stratis_gui.kivy.i18n import _
-from electrum_stratis.contacts import Contacts
 from electrum_stratis.paymentrequest import InvoiceStore
 from electrum_stratis.util import profiler, InvalidPassword
 from electrum_stratis.plugins import run_hook
@@ -201,9 +200,6 @@ class ElectrumWindow(App):
         self.daemon = self.gui_object.daemon
         self.fx = self.daemon.fx
 
-        self.contacts = Contacts(self.electrum_config)
-        self.invoices = InvoiceStore(self.electrum_config)
-
         # create triggers so as to minimize updation a max of 2 times a sec
         self._trigger_update_wallet =\
             Clock.create_trigger(self.update_wallet, .5)
@@ -217,11 +213,11 @@ class ElectrumWindow(App):
         return os.path.basename(self.wallet.storage.path) if self.wallet else ' '
 
     def on_pr(self, pr):
-        if pr.verify(self.contacts):
-            key = self.invoices.add(pr)
+        if pr.verify(self.wallet.contacts):
+            key = self.wallet.invoices.add(pr)
             if self.invoices_screen:
                 self.invoices_screen.update()
-            status = self.invoices.get_status(key)
+            status = self.wallet.invoices.get_status(key)
             if status == PR_PAID:
                 self.show_error("invoice already paid")
                 self.send_screen.do_clear()
@@ -257,6 +253,9 @@ class ElectrumWindow(App):
             return
         # show error
         self.show_error("Unable to decode QR data")
+
+    def update_history_tab(self):
+        Clock.schedule_once(lambda dt: self.update_tab('history'))
 
     def update_tab(self, name):
         s = getattr(self, name + '_screen', None)
@@ -382,7 +381,7 @@ class ElectrumWindow(App):
         win = Window
         win.bind(size=self.on_size, on_keyboard=self.on_keyboard)
         win.bind(on_key_down=self.on_key_down)
-        win.softinput_mode = 'below_target'
+        #win.softinput_mode = 'below_target'
         self.on_size(win, win.size)
         self.init_ui()
         self.load_wallet_by_name(self.electrum_config.get_wallet_path())
@@ -426,7 +425,7 @@ class ElectrumWindow(App):
     def load_wallet_by_name(self, path):
         if not path:
             return
-        wallet = self.daemon.load_wallet(path)
+        wallet = self.daemon.load_wallet(path, None)
         if wallet:
             if wallet != self.wallet:
                 self.stop_wallet()
@@ -434,7 +433,8 @@ class ElectrumWindow(App):
                 self.on_resume()
         else:
             Logger.debug('Electrum: Wallet not found. Launching install wizard')
-            wizard = Factory.InstallWizard(self.electrum_config, path)
+            storage = WalletStorage(path)
+            wizard = Factory.InstallWizard(self.electrum_config, storage)
             wizard.bind(on_wizard_complete=self.on_wizard_complete)
             action = wizard.storage.get_action()
             wizard.run(action)
@@ -575,7 +575,7 @@ class ElectrumWindow(App):
         else:
             status = _("Not connected")
         n = self.wallet.basename()
-        self.status = '[size=15dp]%s[/size]\n%s' %(n, status) if n !='default_wallet' else status
+        self.status = '[size=15dp]%s[/size]\n%s' %(n, status)
 
     def get_max_amount(self):
         inputs = self.wallet.get_spendable_coins(None)
@@ -731,7 +731,7 @@ class ElectrumWindow(App):
             self.show_info(txid)
             if ok and pr:
                 pr.set_paid(tx.hash())
-                self.invoices.save()
+                self.wallet.invoices.save()
                 self.update_tab('invoices')
 
         if self.network and self.network.is_connected():

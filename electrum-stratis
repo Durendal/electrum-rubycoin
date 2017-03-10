@@ -95,9 +95,9 @@ if is_bundle or is_local or is_android:
     imp.load_module('electrum_stratis', *imp.find_module('lib'))
     imp.load_module('electrum_stratis_gui', *imp.find_module('gui'))
 
-
+from electrum_stratis import stratis, network
 from electrum_stratis import SimpleConfig, Network
-from electrum_stratis.wallet import Wallet
+from electrum_stratis.wallet import Wallet, Imported_Wallet
 from electrum_stratis.storage import WalletStorage
 from electrum_stratis.util import print_msg, print_stderr, json_encode, json_decode
 from electrum_stratis.util import set_verbosity, InvalidPassword, check_www_dir
@@ -124,7 +124,7 @@ def run_non_RPC(config):
     cmdname = config.get('cmd')
 
     storage = WalletStorage(config.get_wallet_path())
-    if storage.file_exists:
+    if storage.file_exists():
         sys.exit("Error: Remove the existing wallet first!")
 
     def password_dialog():
@@ -134,19 +134,24 @@ def run_non_RPC(config):
         text = config.get('text').strip()
         passphrase = config.get('passphrase', '')
         password = password_dialog() if keystore.is_private(text) else None
-        if keystore.is_seed(text):
-            k = keystore.from_seed(text, passphrase)
-        elif keystore.is_any_key(text):
-            k = keystore.from_keys(text)
+        if keystore.is_address_list(text):
+            wallet = Imported_Wallet(storage)
+            for x in text.split():
+                wallet.import_address(x)
         else:
-            sys.exit("Error: Seed or key not recognized")
-        if password:
-            k.update_password(None, password)
-        storage.put('keystore', k.dump())
-        storage.put('wallet_type', 'standard')
-        storage.put('use_encryption', bool(password))
-        storage.write()
-        wallet = Wallet(storage)
+            if keystore.is_seed(text):
+                k = keystore.from_seed(text, passphrase)
+            elif keystore.is_any_key(text):
+                k = keystore.from_keys(text)
+            else:
+                sys.exit("Error: Seed or key not recognized")
+            if password:
+                k.update_password(None, password)
+            storage.put('keystore', k.dump())
+            storage.put('wallet_type', 'standard')
+            storage.put('use_encryption', bool(password))
+            storage.write()
+            wallet = Wallet(storage)
         if not config.get('offline'):
             network = Network(config)
             network.start()
@@ -179,7 +184,27 @@ def run_non_RPC(config):
     sys.exit(0)
 
 
-def init_cmdline(config_options):
+def init_daemon(config_options):
+    config = SimpleConfig(config_options)
+    storage = WalletStorage(config.get_wallet_path())
+    if not storage.file_exists():
+        print_msg("Error: Wallet file not found.")
+        print_msg("Type 'electrum create' to create a new wallet, or provide a path to a wallet with the -w option")
+        sys.exit(0)
+    if storage.is_encrypted():
+        if config.get('password'):
+            password = config.get('password')
+        else:
+            password = prompt_password('Password:', False)
+            if not password:
+                print_msg("Error: Password required")
+                sys.exit(1)
+    else:
+        password = None
+    config_options['password'] = password
+
+
+def init_cmdline(config_options, server):
     config = SimpleConfig(config_options)
     cmdname = config.get('cmd')
     cmd = known_commands[cmdname]
@@ -197,7 +222,7 @@ def init_cmdline(config_options):
     # instanciate wallet for command-line
     storage = WalletStorage(config.get_wallet_path())
 
-    if cmd.requires_wallet and not storage.file_exists:
+    if cmd.requires_wallet and not storage.file_exists():
         print_msg("Error: Wallet file not found.")
         print_msg("Type 'electrum-stratis create' to create a new wallet, or provide a path to a wallet with the -w option")
         sys.exit(0)
@@ -209,7 +234,8 @@ def init_cmdline(config_options):
         print_stderr("In particular, DO NOT use 'redeem private key' services proposed by third parties.")
 
     # commands needing password
-    if cmd.requires_password and storage.get('use_encryption'):
+    if (cmd.requires_wallet and storage.is_encrypted() and server is None)\
+       or (cmd.requires_password and (storage.get('use_encryption') or storage.is_encrypted())):
         if config.get('password'):
             password = config.get('password')
         else:
@@ -232,18 +258,23 @@ def init_cmdline(config_options):
 def run_offline_command(config, config_options):
     cmdname = config.get('cmd')
     cmd = known_commands[cmdname]
-    storage = WalletStorage(config.get_wallet_path())
-    wallet = Wallet(storage) if cmd.requires_wallet else None
+    password = config_options.get('password')
+    if cmd.requires_wallet:
+        storage = WalletStorage(config.get_wallet_path())
+        if storage.is_encrypted():
+            storage.decrypt(password)
+        wallet = Wallet(storage)
+    else:
+        wallet = None
     # check password
     if cmd.requires_password and storage.get('use_encryption'):
-        password = config_options.get('password')
         try:
             seed = wallet.check_password(password)
         except InvalidPassword:
             print_msg("Error: This password does not decode this wallet.")
             sys.exit(1)
     if cmd.requires_network:
-        print_stderr("Warning: running command offline")
+        print_msg("Warning: running command offline")
     # arguments passed to function
     args = map(lambda x: config.get(x), cmd.params)
     # decode json arguments
@@ -329,6 +360,10 @@ if __name__ == '__main__':
         stratis.set_testnet()
         network.set_testnet()
 
+    if config.get('nolnet'):
+        bitcoin.set_nolnet()
+        network.set_nolnet()
+
     # run non-RPC commands separately
     if cmdname in ['create', 'restore']:
         run_non_RPC(config)
@@ -347,7 +382,9 @@ if __name__ == '__main__':
 
     elif cmdname == 'daemon':
         subcommand = config.get('subcommand')
-        assert subcommand in [None, 'start', 'stop', 'status']
+        if subcommand in ['load_wallet']:
+            init_daemon(config_options)
+
         if subcommand in [None, 'start']:
             fd, server = daemon.get_fd_or_server(config)
             if fd is not None:
@@ -377,8 +414,8 @@ if __name__ == '__main__':
                 sys.exit(1)
     else:
         # command line
-        init_cmdline(config_options)
         server = daemon.get_server(config)
+        init_cmdline(config_options, server)
         if server is not None:
             result = server.run_cmdline(config_options)
         else:

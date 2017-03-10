@@ -39,11 +39,9 @@ import PyQt4.QtCore as QtCore
 from electrum_stratis.i18n import _, set_language
 from electrum_stratis.plugins import run_hook
 from electrum_stratis import SimpleConfig, Wallet, WalletStorage
-from electrum_stratis.paymentrequest import InvoiceStore
-from electrum_stratis.contacts import Contacts
 from electrum_stratis.synchronizer import Synchronizer
 from electrum_stratis.verifier import SPV
-from electrum_stratis.util import DebugMem, UserCancelled
+from electrum_stratis.util import DebugMem, UserCancelled, InvalidPassword
 from electrum_stratis.wallet import Abstract_Wallet
 from installwizard import InstallWizard, GoBack
 
@@ -89,9 +87,6 @@ class ElectrumGui:
         self.app = QApplication(sys.argv)
         self.app.installEventFilter(self.efilter)
         self.timer = Timer()
-        # shared objects
-        self.invoices = InvoiceStore(self.config)
-        self.contacts = Contacts(self.config)
         # init tray
         self.dark_icon = self.config.get("dark_icon", False)
         self.tray = QSystemTrayIcon(self.tray_icon(), None)
@@ -159,13 +154,10 @@ class ElectrumGui:
                 w.bring_to_top()
                 break
         else:
-            try:
-                wallet = self.daemon.load_wallet(path)
-            except BaseException as e:
-                QMessageBox.information(None, _('Error'), str(e), _('OK'))
-                return
-            if wallet is None:
-                wizard = InstallWizard(self.config, self.app, self.plugins, path)
+            wallet = self.daemon.load_wallet(path, None)
+            if not wallet:
+                storage = WalletStorage(path)
+                wizard = InstallWizard(self.config, self.app, self.plugins, storage)
                 wallet = wizard.run_and_get_wallet()
                 if not wallet:
                     return

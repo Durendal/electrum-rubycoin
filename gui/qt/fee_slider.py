@@ -12,7 +12,6 @@ class FeeSlider(QSlider):
     def __init__(self, window, config, callback):
         QSlider.__init__(self, Qt.Horizontal)
         self.config = config
-        self.fee_step = self.config.max_fee_rate() / 10
         self.window = window
         self.callback = callback
         self.dyn = False
@@ -35,10 +34,10 @@ class FeeSlider(QSlider):
         if self.dyn:
             tooltip = fee_levels[pos] + '\n' + rate_str
         else:
-            tooltip = rate_str
+            tooltip = 'Fixed rate: ' + rate_str
             if self.config.has_fee_estimates():
                 i = self.config.reverse_dynfee(fee_rate)
-                tooltip += '\n' + (_('low fee') if i < 0 else 'Within %d blocks'%i)
+                tooltip += '\n' + (_('Low fee') if i < 0 else 'Within %d blocks'%i)
         return tooltip
 
     def update(self):
@@ -50,6 +49,7 @@ class FeeSlider(QSlider):
                 self.setRange(0, 4)
                 self.setValue(pos)
             else:
+                self.fee_step = self.config.max_fee_rate() / 10
                 fee_rate = self.config.fee_per_kb()
                 pos = min(fee_rate / self.fee_step, 10)
                 self.setRange(1, 10)

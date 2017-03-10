@@ -32,11 +32,15 @@ import json
 import copy
 import re
 import stat
+import pbkdf2, hmac, hashlib
+import base64
+import zlib
 
 from i18n import _
 from util import NotEnoughFunds, PrintError, profiler
 from plugins import run_hook, plugin_loaders
 from keystore import bip44_derivation
+import stratis
 
 
 # seed_version is now used for the version of the wallet file
@@ -60,53 +64,55 @@ def multisig_type(wallet_type):
 class WalletStorage(PrintError):
 
     def __init__(self, path):
+        self.print_error("wallet path", path)
         self.lock = threading.RLock()
         self.data = {}
         self.path = path
-        self.file_exists = False
         self.modified = False
-        self.print_error("wallet path", self.path)
-        if self.path:
-            self.read(self.path)
+        self.pubkey = None
+        if self.file_exists():
+            with open(self.path, "r") as f:
+                self.raw = f.read()
+            if not self.is_encrypted():
+                self.load_data(self.raw)
+
+    def load_data(self, s):
+        try:
+            self.data = json.loads(s)
+        except:
+            raise IOError("Cannot read wallet file '%s'" % self.path)
         # check here if I need to load a plugin
         t = self.get('wallet_type')
         l = plugin_loaders.get(t)
         if l: l()
 
-
-    def read(self, path):
-        """Read the contents of the wallet file."""
+    def is_encrypted(self):
         try:
-            with open(self.path, "r") as f:
-                data = f.read()
-        except IOError:
-            return
-        if not data:
-            return
-        try:
-            self.data = json.loads(data)
+            return base64.b64decode(self.raw).startswith('BIE1')
         except:
-            try:
-                d = ast.literal_eval(data)  #parse raw data from reading wallet file
-                labels = d.get('labels', {})
-            except Exception as e:
-                raise IOError("Cannot read wallet file '%s'" % self.path)
-            self.data = {}
-            # In old versions of Electrum labels were latin1 encoded, this fixes breakage.
-            for i, label in labels.items():
-                try:
-                    unicode(label)
-                except UnicodeDecodeError:
-                    d['labels'][i] = unicode(label.decode('latin1'))
-            for key, value in d.items():
-                try:
-                    json.dumps(key)
-                    json.dumps(value)
-                except:
-                    self.print_error('Failed to convert label to json format', key)
-                    continue
-                self.data[key] = value
-        self.file_exists = True
+            return False
+
+    def file_exists(self):
+        return self.path and os.path.exists(self.path)
+
+    def get_key(self, password):
+        secret = pbkdf2.PBKDF2(password, '', iterations = 1024, macmodule = hmac, digestmodule = hashlib.sha512).read(64)
+        ec_key = stratis.EC_KEY(secret)
+        return ec_key
+
+    def decrypt(self, password):
+        ec_key = self.get_key(password)
+        s = zlib.decompress(ec_key.decrypt_message(self.raw)) if self.raw else None
+        self.pubkey = ec_key.get_public_key()
+        self.load_data(s)
+
+    def set_password(self, password, encrypt):
+        self.put('use_encryption', bool(password))
+        if encrypt and password:
+            ec_key = self.get_key(password)
+            self.pubkey = ec_key.get_public_key()
+        else:
+            self.pubkey = None
 
     def get(self, key, default=None):
         with self.lock:
@@ -133,12 +139,12 @@ class WalletStorage(PrintError):
                 self.modified = True
                 self.data.pop(key)
 
+    @profiler
     def write(self):
         # this ensures that previous versions of electrum won't open the wallet
         self.put('seed_version', FINAL_SEED_VERSION)
         with self.lock:
             self._write()
-        self.file_exists = True
 
     def _write(self):
         if threading.currentThread().isDaemon():
@@ -147,6 +153,9 @@ class WalletStorage(PrintError):
         if not self.modified:
             return
         s = json.dumps(self.data, indent=4, sort_keys=True)
+        if self.pubkey:
+            s = stratis.encrypt_message(zlib.compress(s), self.pubkey)
+
         temp_path = "%s.tmp.%s" % (self.path, os.getpid())
         with open(temp_path, "w") as f:
             f.write(s)
@@ -215,23 +224,13 @@ class WalletStorage(PrintError):
         return result
 
     def requires_upgrade(self):
-        return self.file_exists and self.get_seed_version() != FINAL_SEED_VERSION
+        return self.file_exists() and self.get_seed_version() != FINAL_SEED_VERSION
 
     def upgrade(self):
         self.convert_imported()
         self.convert_wallet_type()
         self.convert_account()
-        self.convert_pubkeys()
         self.write()
-
-    def convert_pubkeys(self):
-        # version 12 had a bug in pubkey ordering
-        # it is fixed by forcing pubkey regeneration
-        if self.get_seed_version() != 12:
-            return
-        if self.get('wallet_type') in ['standard', 'imported']:
-            return
-        self.put('pubkeys', {})
 
     def convert_wallet_type(self):
         wallet_type = self.get('wallet_type')
@@ -346,17 +345,14 @@ class WalletStorage(PrintError):
             raise BaseException('no addresses or privkeys')
 
     def convert_account(self):
-        d = self.get('accounts', {}).get('0', {})
-        if not d:
-            return False
         self.put('accounts', None)
-        self.put('pubkeys', d)
+        self.put('pubkeys', None)
 
     def get_action(self):
         action = run_hook('get_action', self)
         if action:
             return action
-        if not self.file_exists:
+        if not self.file_exists():
             return 'new'
 
     def get_seed_version(self):
