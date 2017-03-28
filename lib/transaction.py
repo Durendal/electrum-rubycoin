@@ -307,7 +307,7 @@ def parse_scriptSig(d, bytes):
         item = decoded[0][1]
         if item[0] == chr(0):
             redeemScript = item.encode('hex')
-            d['address'] = bitcoin.hash160_to_p2sh(bitcoin.hash_160(redeemScript.decode('hex')))
+            d['address'] = stratis.hash160_to_p2sh(stratis.hash_160(redeemScript.decode('hex')))
             d['type'] = 'p2wpkh-p2sh'
             d['redeemScript'] = redeemScript
             d['x_pubkeys'] = ["(witness)"]
@@ -468,11 +468,11 @@ def push_script(x):
 
 def get_scriptPubKey(addr):
     addrtype, hash_160 = bc_address_to_hash_160(addr)
-    if addrtype == bitcoin.ADDRTYPE_P2PKH:
+    if addrtype == stratis.ADDRTYPE_P2PKH:
         script = '76a9'                                      # op_dup, op_hash_160
         script += push_script(hash_160.encode('hex'))
         script += '88ac'                                     # op_equalverify, op_checksig
-    elif addrtype == bitcoin.ADDRTYPE_P2SH:
+    elif addrtype == stratis.ADDRTYPE_P2SH:
         script = 'a9'                                        # op_hash_160
         script += push_script(hash_160.encode('hex'))
         script += '87'                                       # op_equal
@@ -576,7 +576,7 @@ class Transaction:
     def deserialize(self):
         if self.raw is None:
             return
-            #self.raw = self.serialize()
+            self.raw = self.serialize()
         if self._inputs is not None:
             return
         d = deserialize(self.raw)
@@ -616,6 +616,14 @@ class Transaction:
         else:
             raise TypeError('Unknown output type')
         return script
+
+    @classmethod
+    def from_io(klass, inputs, outputs, locktime=0):
+        self = klass(None)
+        self._inputs = inputs
+        self._outputs = outputs
+        self.locktime = locktime
+        return self
 
     @classmethod
     def get_siglist(self, txin, estimate_size=False):
@@ -747,10 +755,10 @@ class Transaction:
             hashOutputs = Hash(''.join(self.serialize_output(o) for o in outputs).decode('hex')).encode('hex')
             outpoint = self.serialize_outpoint(txin)
             pubkey = txin['pubkeys'][0]
-            pkh = bitcoin.hash_160(pubkey.decode('hex')).encode('hex')
+            pkh = stratis.hash_160(pubkey.decode('hex')).encode('hex')
             redeemScript = '00' + push_script(pkh)
             scriptCode = push_script('76a9' + push_script(pkh) + '88ac')
-            script_hash = bitcoin.hash_160(redeemScript.decode('hex')).encode('hex')
+            script_hash = stratis.hash_160(redeemScript.decode('hex')).encode('hex')
             scriptPubKey = 'a9' + push_script(script_hash) + '87'
             amount = int_to_hex(txin['value'], 8)
             nSequence = int_to_hex(txin.get('sequence', 0xffffffff), 4)
@@ -857,7 +865,7 @@ class Transaction:
                 if len(signatures) == num:
                     # txin is complete
                     break
-                fd_key = 'fd00' + bitcoin.hash_160(pubkeys[j].decode('hex')).encode('hex')
+                fd_key = 'fd00' + stratis.hash_160(pubkeys[j].decode('hex')).encode('hex')
                 if x_pubkey in keypairs.keys() or fd_key in keypairs.keys():
                     print_error("adding signature for", x_pubkey)
                     sec = keypairs.get(x_pubkey) or keypairs.get(fd_key)
@@ -884,7 +892,7 @@ class Transaction:
             if type == TYPE_ADDRESS:
                 addr = x
             elif type == TYPE_PUBKEY:
-                addr = bitcoin.public_key_to_p2pkh(x.decode('hex'))
+                addr = stratis.public_key_to_p2pkh(x.decode('hex'))
             else:
                 addr = 'SCRIPT ' + x.encode('hex')
             o.append((addr,v))      # consider using yield (addr, v)

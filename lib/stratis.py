@@ -77,10 +77,10 @@ MAX_FEE_RATE = 300000
 FEE_TARGETS = [25, 10, 5, 2]
 COIN = 100000000
 
-# supported types of transction outputs
+# supported types of transaction outputs
 TYPE_ADDRESS = 0
-TYPE_PUBKEY  = 1
-TYPE_SCRIPT  = 2
+TYPE_PUBKEY = 1
+TYPE_SCRIPT = 2
 
 # AES encryption
 try:

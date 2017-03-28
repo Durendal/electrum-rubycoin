@@ -202,13 +202,8 @@ class Plugin(BasePlugin):
         if not xprv:
             return
         try:
-<<<<<<< HEAD
-            k = stratis.deserialize_xkey(xprv)[-1].encode('hex')
+            k = stratis.deserialize_xprv(xprv)[-1].encode('hex')
             EC = stratis.EC_KEY(k.decode('hex'))
-=======
-            k = bitcoin.deserialize_xprv(xprv)[-1].encode('hex')
-            EC = bitcoin.EC_KEY(k.decode('hex'))
->>>>>>> upstream/master
             message = EC.decrypt_message(message)
         except Exception as e:
             traceback.print_exc(file=sys.stdout)

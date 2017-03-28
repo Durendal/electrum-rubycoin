@@ -50,7 +50,7 @@ from electrum_stratis.util import (block_explorer, block_explorer_info, format_t
                            format_satoshis_plain, NotEnoughFunds,
                            UserCancelled)
 from electrum_stratis import Transaction, mnemonic
-from electrum_stratis import util, bitcoin, commands, coinchooser
+from electrum_stratis import util, stratis, commands, coinchooser
 from electrum_stratis import SimpleConfig, paymentrequest
 from electrum_stratis.wallet import Wallet, Multisig_Wallet
 

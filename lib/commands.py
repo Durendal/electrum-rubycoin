@@ -249,23 +249,13 @@ class Commands:
         tx = Transaction(tx)
         return self.network.broadcast(tx, timeout)
 
-<<<<<<< HEAD
     # @command('')
     # def createmultisig(self, num, pubkeys):
     #     """Create multisig address"""
     #     assert isinstance(pubkeys, list), (type(num), type(pubkeys))
-    #     redeem_script = Transaction.multisig_script(pubkeys, num)
-    #     address = hash_160_to_bc_address(hash_160(redeem_script.decode('hex')), 5)
+    #     redeem_script = transaction.multisig_script(pubkeys, num)
+    #     address = bitcoin.hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
     #     return {'address':address, 'redeemScript':redeem_script}
-=======
-    @command('')
-    def createmultisig(self, num, pubkeys):
-        """Create multisig address"""
-        assert isinstance(pubkeys, list), (type(num), type(pubkeys))
-        redeem_script = transaction.multisig_script(pubkeys, num)
-        address = bitcoin.hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
-        return {'address':address, 'redeemScript':redeem_script}
->>>>>>> b8fdfe203785fb7a7ecc16b724f14eba878c29b2
 
     @command('w')
     def freeze(self, address):
@@ -803,22 +793,12 @@ def add_global_options(parser):
 def get_parser():
     # create main parser
     parser = argparse.ArgumentParser(
-<<<<<<< HEAD
-        parents=[parent_parser],
         epilog="Run 'electrum-stratis help <command>' to see the help for a command")
-    subparsers = parser.add_subparsers(dest='cmd', metavar='<command>')
-    # gui
-    parser_gui = subparsers.add_parser('gui', parents=[parent_parser], description="Run Electrum's Graphical User Interface.", help="Run GUI (default)")
-    parser_gui.add_argument("url", nargs='?', default=None, help="stratis URI (or bip70 file)")
-    #parser_gui.set_defaults(func=run_gui)
-=======
-        epilog="Run 'electrum help <command>' to see the help for a command")
     add_global_options(parser)
     subparsers = parser.add_subparsers(dest='cmd', metavar='<command>')
     # gui
     parser_gui = subparsers.add_parser('gui', description="Run Electrum's Graphical User Interface.", help="Run GUI (default)")
-    parser_gui.add_argument("url", nargs='?', default=None, help="bitcoin URI (or bip70 file)")
->>>>>>> b8fdfe203785fb7a7ecc16b724f14eba878c29b2
+    parser_gui.add_argument("url", nargs='?', default=None, help="stratis URI (or bip70 file)")
     parser_gui.add_argument("-g", "--gui", dest="gui", help="select graphical user interface", choices=['qt', 'kivy', 'text', 'stdio'])
     parser_gui.add_argument("-o", "--offline", action="store_true", dest="offline", default=False, help="Run offline")
     parser_gui.add_argument("-m", action="store_true", dest="hide_gui", default=False, help="hide GUI on startup")
