@@ -32,12 +32,12 @@ from hashlib import sha256
 from urlparse import urljoin
 from urllib import quote
 
-import electrum
-from electrum import bitcoin
-from electrum import keystore
-from electrum_stratis.bitcoin import *
+import electrum_stratis
+from electrum_stratis import stratis
+from electrum_stratis import keystore
+from electrum_stratis.stratis import *
 from electrum_stratis.mnemonic import Mnemonic
-from electrum import version
+from electrum_stratis import version
 from electrum_stratis.wallet import Multisig_Wallet, Deterministic_Wallet, Wallet
 from electrum_stratis.i18n import _
 from electrum_stratis.plugins import BasePlugin, run_hook, hook
@@ -332,7 +332,7 @@ class TrustedCoinPlugin(BasePlugin):
         return True
 
     def make_seed(self):
-        return Mnemonic('english').make_seed(num_bits=128, prefix=SEED_PREFIX)
+        return Mnemonic('english').make_seed(seed_type='2fa', num_bits=128)
 
     @hook
     def do_clear(self, window):
@@ -377,11 +377,11 @@ class TrustedCoinPlugin(BasePlugin):
         xprv1, xpub1, xprv2, xpub2 = self.xkeys_from_seed(seed, passphrase)
         k1 = keystore.from_xprv(xprv1)
         k2 = keystore.from_xpub(xpub2)
-        wizard.request_password(run_next=lambda pw: self.on_password(wizard, pw, k1, k2))
+        wizard.request_password(run_next=lambda pw, encrypt: self.on_password(wizard, pw, encrypt, k1, k2))
 
-    def on_password(self, wizard, password, k1, k2):
+    def on_password(self, wizard, password, encrypt, k1, k2):
         k1.update_password(None, password)
-        wizard.storage.put('use_encryption', bool(password))
+        wizard.storage.set_password(password, encrypt)
         wizard.storage.put('x1/', k1.dump())
         wizard.storage.put('x2/', k2.dump())
         wizard.storage.write()
@@ -424,12 +424,12 @@ class TrustedCoinPlugin(BasePlugin):
 
     def on_choice(self, wizard, seed, passphrase, x):
         if x == 'disable':
-            f = lambda pw: wizard.run('on_restore_pw', seed, passphrase, pw)
+            f = lambda pw, encrypt: wizard.run('on_restore_pw', seed, passphrase, pw, encrypt)
             wizard.request_password(run_next=f)
         else:
             self.create_keystore(wizard, seed, passphrase)
 
-    def on_restore_pw(self, wizard, seed, passphrase, password):
+    def on_restore_pw(self, wizard, seed, passphrase, password, encrypt):
         storage = wizard.storage
         xprv1, xpub1, xprv2, xpub2 = self.xkeys_from_seed(seed, passphrase)
         k1 = keystore.from_xprv(xprv1)

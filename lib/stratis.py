@@ -45,11 +45,13 @@ ADDRTYPE_P2WPKH = 6
 XPRV_HEADER = 0x0488b2dd
 XPUB_HEADER = 0x0488c21e
 HEADERS_URL = "http://seed.stratisplatform.com/blockchain_headers"
+GENESIS = "0000066e91e46e5a264d42c89e1204963b2ee6be230b443e9159020539d972af"
 
 def set_testnet():
     global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, ADDRTYPE_P2WPKH
     global XPRV_HEADER, XPUB_HEADER
     global TESTNET, HEADERS_URL
+    global GENESIS
     TESTNET = True
     ADDRTYPE_P2PKH = 111
     ADDRTYPE_P2SH = 196
@@ -57,18 +59,21 @@ def set_testnet():
     XPRV_HEADER = 0x04358394
     XPUB_HEADER = 0x043587cf
     HEADERS_URL = "http://seed.stratisplatform.com/blockchain_headers_testnet"
+    GENESIS = "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"
 
 def set_nolnet():
     global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, ADDRTYPE_P2WPKH
     global XPRV_HEADER, XPUB_HEADER
     global NOLNET, HEADERS_URL
-    NOLNET = True
+    global GENESIS
+    TESTNET = True
     ADDRTYPE_P2PKH = 0
     ADDRTYPE_P2SH = 5
     ADDRTYPE_P2WPKH = 6
     XPRV_HEADER = 0x0488ade4
     XPUB_HEADER = 0x0488b21e
     HEADERS_URL = "https://headers.electrum.org/nolnet_headers"
+    GENESIS = "663c88be18d07c45f87f910b93a1a71ed9ef1946cad50eb6a6f3af4c424625c6"
 
 ################################## transactions
 

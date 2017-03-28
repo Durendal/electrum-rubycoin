@@ -57,7 +57,6 @@ class TestTransaction(unittest.TestCase):
             'inputs': [{
                 'type': 'p2pkh',
                 'address': '1446oU3z268EeFgfcwJv6X2VBXHfoYxfuD',
-                'is_coinbase': False,
                 'num_sig': 1,
                 'prevout_hash': '3140eb24b43386f35ba69e3875eb6c93130ac66201d01c58f598defc949a5c2a',
                 'prevout_n': 0,
@@ -87,9 +86,6 @@ class TestTransaction(unittest.TestCase):
         self.assertTrue(tx.has_address('LNH44gMp6kNHu4Npo5JDNY6FPjewvMKDnz'))
         self.assertFalse(tx.has_address('LWdgGJGqSmaGYcp6e21RvpGmcuexJorNEH'))
 
-        # Commenting out broken test until we know why inputs_without_script() is not returnng anything.
-        #self.assertEquals(tx.inputs_without_script(), set(x_pubkey for i in expected['inputs'] for x_pubkey in i['x_pubkeys']))
-
         self.assertEquals(tx.serialize(), unsigned_blob)
 
         tx.update_signatures(signed_blob)
@@ -105,7 +101,6 @@ class TestTransaction(unittest.TestCase):
             'inputs': [{
                 'type': 'p2pkh',
                 'address': '1446oU3z268EeFgfcwJv6X2VBXHfoYxfuD',
-                'is_coinbase': False,
                 'num_sig': 1,
                 'prevout_hash': '3140eb24b43386f35ba69e3875eb6c93130ac66201d01c58f598defc949a5c2a',
                 'prevout_n': 0,
@@ -128,7 +123,6 @@ class TestTransaction(unittest.TestCase):
         self.assertEquals(tx.deserialize(), None)
         self.assertEquals(tx.as_dict(), {'hex': signed_blob, 'complete': True, 'final': True})
 
-        self.assertEquals(tx.inputs_without_script(), set())
         self.assertEquals(tx.serialize(), signed_blob)
 
         tx.update_signatures(signed_blob)

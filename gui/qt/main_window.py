@@ -338,11 +338,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.print_error("using default geometry")
             self.setGeometry(100, 100, 840, 400)
 
-    def wallet_name(self):
-        return self.wallet.basename().decode('utf8')
-
     def watching_only_changed(self):
-        title = 'Electrum Stratis %s  -  %s' % (self.wallet.electrum_version, self.wallet_name())
+        title = 'Electrum Stratis %s  -  %s' % (self.wallet.electrum_version, self.wallet.basename())
         extra = [self.wallet.storage.get('wallet_type', '?')]
         if self.wallet.is_watching_only():
             self.warn_if_watching_only()
@@ -387,7 +384,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 self.show_critical(_("Electrum was unable to copy your wallet file to the specified location.") + "\n" + str(reason), title=_("Unable to create backup"))
 
     def update_recently_visited(self, filename):
-        filename = filename.decode('utf8')
         recent = self.config.get('recently_open', [])
         if filename in recent:
             recent.remove(filename)
@@ -678,7 +674,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             text = _("Not connected")
             icon = QIcon(":icons/status_disconnected.png")
 
-        self.tray.setToolTip("%s (%s)" % (text, self.wallet_name()))
+        self.tray.setToolTip("%s (%s)" % (text, self.wallet.basename()))
         self.balance_label.setText(text)
         self.status_button.setIcon( icon )
 
@@ -1309,7 +1305,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         use_rbf = self.rbf_checkbox.isChecked()
         if use_rbf:
-            tx.set_sequence(0)
+            tx.set_rbf(True)
 
         if fee < self.wallet.relayfee() * tx.estimated_size() / 1000 and tx.requires_fee(self.wallet):
             self.show_error(_("This transaction requires a higher fee, or it will not be propagated by the network"))
@@ -1386,7 +1382,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 return False, _("Payment request has expired")
             status, msg =  self.network.broadcast(tx)
             if pr and status is True:
-                pr.set_paid(tx.txid())
+                self.invoices.set_paid(pr, tx.txid())
                 self.invoices.save()
                 self.payment_request = None
                 refund_address = self.wallet.get_receiving_addresses()[0]
@@ -1619,32 +1615,40 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.show_pr_details(pr)
 
     def show_pr_details(self, pr):
+        key = pr.get_id()
         d = WindowModalDialog(self, _("Invoice"))
         vbox = QVBoxLayout(d)
         grid = QGridLayout()
         grid.addWidget(QLabel(_("Requestor") + ':'), 0, 0)
         grid.addWidget(QLabel(pr.get_requestor()), 0, 1)
-        grid.addWidget(QLabel(_("Expires") + ':'), 1, 0)
-        grid.addWidget(QLabel(format_time(pr.get_expiration_date())), 1, 1)
+        grid.addWidget(QLabel(_("Amount") + ':'), 1, 0)
+        outputs_str = '\n'.join(map(lambda x: self.format_amount(x[2])+ self.base_unit() + ' @ ' + x[1], pr.get_outputs()))
+        grid.addWidget(QLabel(outputs_str), 1, 1)
+        expires = pr.get_expiration_date()
         grid.addWidget(QLabel(_("Memo") + ':'), 2, 0)
         grid.addWidget(QLabel(pr.get_memo()), 2, 1)
         grid.addWidget(QLabel(_("Signature") + ':'), 3, 0)
         grid.addWidget(QLabel(pr.get_verify_status()), 3, 1)
-        grid.addWidget(QLabel(_("Payment URL") + ':'), 4, 0)
-        grid.addWidget(QLabel(pr.payment_url), 4, 1)
-        grid.addWidget(QLabel(_("Outputs") + ':'), 5, 0)
-        outputs_str = '\n'.join(map(lambda x: x[1] + ' ' + self.format_amount(x[2])+ self.base_unit(), pr.get_outputs()))
-        grid.addWidget(QLabel(outputs_str), 5, 1)
-        if pr.tx:
-            grid.addWidget(QLabel(_("Transaction ID") + ':'), 6, 0)
-            l = QLineEdit(pr.tx)
-            l.setReadOnly(True)
-            grid.addWidget(l, 6, 1)
+        if expires:
+            grid.addWidget(QLabel(_("Expires") + ':'), 4, 0)
+            grid.addWidget(QLabel(format_time(expires)), 4, 1)
         vbox.addLayout(grid)
-        vbox.addLayout(Buttons(CloseButton(d)))
+        def do_export():
+            fn = self.getOpenFileName(_("Save invoice to file"), "*.bip70")
+            if not fn:
+                return
+            with open(fn, 'w') as f:
+                data = f.write(pr.raw)
+            self.show_message(_('Invoice saved as' + ' ' + fn))
+        exportButton = EnterButton(_('Save'), do_export)
+        def do_delete():
+            if self.question(_('Delete invoice?')):
+                self.invoices.remove(key)
+                self.history_list.update()
+                d.close()
+        deleteButton = EnterButton(_('Delete'), do_delete)
+        vbox.addLayout(Buttons(exportButton, deleteButton, CloseButton(d)))
         d.exec_()
-        return
-
 
     def do_pay_invoice(self, key):
         pr = self.invoices.get(key)
@@ -2790,19 +2794,43 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         total_size = parent_tx.estimated_size() + new_tx.estimated_size()
         d = WindowModalDialog(self, _('Child Pays for Parent'))
         vbox = QVBoxLayout(d)
-        vbox.addWidget(QLabel(_('Total size') + ': %d bytes'% total_size))
+        msg = (
+            "A CPFP is a transaction that sends an unconfirmed output back to "
+            "yourself, with a high fee. The goal is to have miners confirm "
+            "the parent transaction in order to get the fee attached to the "
+            "child transaction.")
+        vbox.addWidget(WWLabel(_(msg)))
+        msg2 = ("The proposed fee is computed using your "
+            "fee/kB settings, applied to the total size of both child and "
+            "parent transactions. After you broadcast a CPFP transaction, "
+            "it is normal to see a new unconfirmed transaction in your history.")
+        vbox.addWidget(WWLabel(_(msg2)))
+        grid = QGridLayout()
+        grid.addWidget(QLabel(_('Total size') + ':'), 0, 0)
+        grid.addWidget(QLabel('%d bytes'% total_size), 0, 1)
         max_fee = new_tx.output_value()
-        vbox.addWidget(QLabel(_('Max fee') + ': %s'% self.format_amount(max_fee) + ' ' + self.base_unit()))
-        vbox.addWidget(QLabel(_('Child fee' + ':')))
+        grid.addWidget(QLabel(_('Input amount') + ':'), 1, 0)
+        grid.addWidget(QLabel(self.format_amount(max_fee) + ' ' + self.base_unit()), 1, 1)
+        output_amount = QLabel('')
+        grid.addWidget(QLabel(_('Output amount') + ':'), 2, 0)
+        grid.addWidget(output_amount, 2, 1)
         fee_e = BTCAmountEdit(self.get_decimal_point)
+        def f(x):
+            a = max_fee - fee_e.get_amount()
+            output_amount.setText((self.format_amount(a) + ' ' + self.base_unit()) if a else '')
+        fee_e.textChanged.connect(f)
         fee = self.config.fee_per_kb() * total_size / 1000
         fee_e.setAmount(fee)
-        vbox.addWidget(fee_e)
+        grid.addWidget(QLabel(_('Fee' + ':')), 3, 0)
+        grid.addWidget(fee_e, 3, 1)
         def on_rate(dyn, pos, fee_rate):
             fee = fee_rate * total_size / 1000
-            fee_e.setAmount(min(max_fee, fee))
+            fee = min(max_fee, fee)
+            fee_e.setAmount(fee)
         fee_slider = FeeSlider(self, self.config, on_rate)
-        vbox.addWidget(fee_slider)
+        fee_slider.update()
+        grid.addWidget(fee_slider, 4, 1)
+        vbox.addLayout(grid)
         vbox.addLayout(Buttons(CancelButton(d), OkButton(d)))
         if not d.exec_():
             return
@@ -2811,7 +2839,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_error(_('Max fee exceeded'))
             return
         new_tx = self.wallet.cpfp(parent_tx, fee)
-        new_tx.set_sequence(0)
+        new_tx.set_rbf(True)
         self.show_transaction(new_tx)
 
     def bump_fee_dialog(self, tx):
@@ -2848,5 +2876,5 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_error(str(e))
             return
         if is_final:
-            new_tx.set_sequence(0xffffffff)
+            new_tx.set_rbf(False)
         self.show_transaction(new_tx)

@@ -1,3 +1,19 @@
+# Release 2.8.3
+  * Blockchain checkpoints can be added and configured from the GUI.
+  * Fix crash on reading older wallet formats.
+
+# Release 2.8.2
+  * show paid invoices in history tab
+  * improve CPFP dialog
+  * fixes for trezor, keepkey
+  * other minor bugfixes
+
+# Release 2.8.1
+  * fix Digital Bitbox plugin
+  * fix daemon jsonrpc
+  * fix trustedcoin wallet creation
+  * other minor bugfixes
+
 # Release 2.8.0 (March 9, 2017)
   * Wallet file encryption using ECIES: A keypair is derived from the
     wallet password. Once the wallet is decrypted, only the public key

@@ -46,6 +46,11 @@ from version import ELECTRUM_VERSION, PROTOCOL_VERSION
 
 DEFAULT_PORTS = {'t':'50001', 's':'50002'}
 
+#There is a schedule to move the default list to e-x (electrumx) by Jan 2018
+#Schedule is as follows:
+#move ~3/4 to e-x by 1.4.17
+#then gradually switch remaining nodes to e-x nodes
+
 DEFAULT_SERVERS = {
     'electrum.stratisplatform.com': DEFAULT_PORTS,
     'electrum2.stratisplatform.com': DEFAULT_PORTS,
@@ -205,9 +210,7 @@ class Network(util.DaemonThread):
         self.banner = ''
         self.donation_address = ''
         self.relay_fee = None
-        self.heights = {}
-        self.merkle_roots = {}
-        self.utxo_roots = {}
+        self.headers = {}
         # callbacks passed with subscriptions
         self.subscriptions = defaultdict(list)
         self.sub_cache = {}
@@ -275,7 +278,8 @@ class Network(util.DaemonThread):
             pass
 
     def get_server_height(self):
-        return self.heights.get(self.default_server, 0)
+        h = self.headers.get(self.default_server)
+        return h['block_height'] if h else 0
 
     def server_is_lagging(self):
         sh = self.get_server_height()
@@ -440,13 +444,20 @@ class Network(util.DaemonThread):
     def set_parameters(self, host, port, protocol, proxy, auto_connect):
         proxy_str = serialize_proxy(proxy)
         server = serialize_server(host, port, protocol)
+        # sanitize parameters
+        try:
+            deserialize_server(serialize_server(host, port, protocol))
+            if proxy:
+                proxy_modes.index(proxy["mode"]) + 1
+                int(proxy['port'])
+        except:
+            return
         self.config.set_key('auto_connect', auto_connect, False)
         self.config.set_key("proxy", proxy_str, False)
         self.config.set_key("server", server, True)
         # abort if changes were not allowed by config
         if self.config.get('server') != server or self.config.get('proxy') != proxy_str:
             return
-
         self.auto_connect = auto_connect
         if self.proxy != proxy or self.protocol != protocol:
             # Restart the network defaulting to the given server
@@ -472,7 +483,12 @@ class Network(util.DaemonThread):
             if suggestion and self.protocol == deserialize_server(suggestion)[2]:
                 self.switch_to_interface(suggestion)
             else:
-                self.switch_to_random_interface()
+                # switch to one that has the correct header (not height)
+                header = self.get_header(self.get_local_height())
+                filtered = map(lambda x:x[0], filter(lambda x: x[1]==header, self.headers.items()))
+                if filtered:
+                    choice = random.choice(filtered)
+                    self.switch_to_interface(choice)
 
     def switch_to_interface(self, server):
         '''Switch to server as our interface.  If no connection exists nor
@@ -536,10 +552,11 @@ class Network(util.DaemonThread):
             if error is None:
                 self.donation_address = result
         elif method == 'blockchain.estimatefee':
-            if error is None:
+            if error is None and result > 0:
                 i = params[0]
-                self.config.fee_estimates[i] = int(result * COIN)
-                self.print_error("fee_estimates[%d]" % i, self.config.fee_estimates[i])
+                fee = int(result*COIN)
+                self.config.fee_estimates[i] = fee
+                self.print_error("fee_estimates[%d]" % i, fee)
                 self.notify('fee')
         elif method == 'blockchain.relayfee':
             if error is None:
@@ -654,7 +671,7 @@ class Network(util.DaemonThread):
             self.set_status('disconnected')
         if server in self.interfaces:
             self.close_interface(self.interfaces[server])
-            self.heights.pop(server, None)
+            self.headers.pop(server, None)
             self.notify('interfaces')
 
     def new_interface(self, server, socket):
@@ -715,6 +732,9 @@ class Network(util.DaemonThread):
 
     def on_get_chunk(self, interface, response):
         '''Handle receiving a chunk of block headers'''
+        if response.get('error'):
+            interface.print_error(response.get('error'))
+            return
         if self.bc_requests:
             req_if, data = self.bc_requests[0]
             req_idx = data.get('chunk_idx')
@@ -832,9 +852,7 @@ class Network(util.DaemonThread):
         height = header.get('block_height')
         if not height:
             return
-        self.heights[i.server] = height
-        self.merkle_roots[i.server] = header.get('merkle_root')
-        self.utxo_roots[i.server] = header.get('utxo_root')
+        self.headers[i.server] = header
 
         # Queue this interface's height for asynchronous catch-up
         self.bc_requests.append((i, {'if_height': height}))

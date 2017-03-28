@@ -408,15 +408,14 @@ def parse_input(vds):
     prevout_hash = hash_encode(vds.read_bytes(32))
     prevout_n = vds.read_uint32()
     scriptSig = vds.read_bytes(vds.read_compact_size())
-    d['scriptSig'] = scriptSig.encode('hex')
     sequence = vds.read_uint32()
+    d['scriptSig'] = scriptSig.encode('hex')
+    d['prevout_hash'] = prevout_hash
+    d['prevout_n'] = prevout_n
+    d['sequence'] = sequence
     if prevout_hash == '00'*32:
-        d['is_coinbase'] = True
+        d['type'] = 'coinbase'
     else:
-        d['is_coinbase'] = False
-        d['prevout_hash'] = prevout_hash
-        d['prevout_n'] = prevout_n
-        d['sequence'] = sequence
         d['pubkeys'] = []
         d['signatures'] = {}
         d['address'] = None
@@ -660,6 +659,8 @@ class Transaction:
     @classmethod
     def input_script(self, txin, estimate_size=False):
         _type = txin['type']
+        if _type == 'coinbase':
+            return txin['scriptSig']
         pubkeys, sig_list = self.get_siglist(txin, estimate_size)
         script = ''.join(push_script(x) for x in sig_list)
         if _type == 'p2pk':
@@ -672,8 +673,10 @@ class Transaction:
         elif _type == 'p2pkh':
             script += push_script(pubkeys[0])
         elif _type == 'p2wpkh-p2sh':
-            redeem_script = segwit_script(pubkeys[0])
+            redeem_script = txin.get('redeemScript') or segwit_script(pubkeys[0])
             return push_script(redeem_script)
+        elif _type == 'address':
+            script += push_script(pubkeys[0])
         else:
             raise TypeError('Unknown txin type', _type)
         return script
@@ -703,9 +706,10 @@ class Transaction:
         s += int_to_hex(txin.get('sequence', 0xffffffff), 4)
         return s
 
-    def set_sequence(self, n):
+    def set_rbf(self, rbf):
+        nSequence = 0xffffffff - (2 if rbf else 0)
         for txin in self.inputs():
-            txin['sequence'] = n
+            txin['sequence'] = nSequence
 
     def BIP_LI01_sort(self):
         # See https://github.com/kristovatlas/rfc/blob/master/bips/bip-li01.mediawiki
@@ -837,7 +841,7 @@ class Transaction:
         r = 0
         s = 0
         for txin in self.inputs():
-            if txin.get('is_coinbase'):
+            if txin['type'] == 'coinbase':
                 continue
             signatures = filter(None, txin.get('signatures',[]))
             s += len(signatures)
@@ -848,14 +852,6 @@ class Transaction:
         s, r = self.signature_count()
         return r == s
 
-    def inputs_without_script(self):
-        out = set()
-        for i, txin in enumerate(self.inputs()):
-            if txin.get('scriptSig') == '':
-                out.add(i)
-        return out
-
-
     def sign(self, keypairs):
         for i, txin in enumerate(self.inputs()):
             num = txin['num_sig']
@@ -865,12 +861,10 @@ class Transaction:
                 if len(signatures) == num:
                     # txin is complete
                     break
-                fd_key = 'fd00' + stratis.hash_160(pubkeys[j].decode('hex')).encode('hex')
-                if x_pubkey in keypairs.keys() or fd_key in keypairs.keys():
+                if x_pubkey in keypairs.keys():
                     print_error("adding signature for", x_pubkey)
-                    sec = keypairs.get(x_pubkey) or keypairs.get(fd_key)
+                    sec = keypairs.get(x_pubkey)
                     pubkey = public_key_from_private_key(sec)
-                    assert pubkey == pubkeys[j]
                     # add signature
                     pre_hash = Hash(self.serialize_preimage(i).decode('hex'))
                     pkey = regenerate_key(sec)

@@ -26,6 +26,7 @@
 import os
 import stratis
 import keystore
+from keystore import bip44_derivation
 from wallet import Wallet, Imported_Wallet, Standard_Wallet, Multisig_Wallet, wallet_types
 from i18n import _
 from plugins import run_hook
@@ -189,9 +190,11 @@ class BaseWizard(object):
                 continue
             devices += map(lambda x: (name, x), u)
         if not devices:
-            msg = '\n'.join([
-                _('No hardware device detected.'),
-                _('To trigger a rescan, press \'next\'.'),
+            msg = ''.join([
+                _('No hardware device detected.') + '\n',
+                _('To trigger a rescan, press \'Next\'.') + '\n\n',
+                _('If your device is not detected on Windows, go to "Settings", "Devices", "Connected devices", and do "Remove device". Then, plug your device again.') + ' ',
+                _('On Linux, you might have to add a new permission to your udev rules.'),
             ])
             self.confirm_dialog(title=title, message=msg, run_next= lambda x: self.choose_hw_device())
             return
@@ -219,7 +222,6 @@ class BaseWizard(object):
             # This is partially compatible with BIP45; assumes index=0
             self.on_hw_derivation(name, device_info, "m/45'/0")
         else:
-            from keystore import bip44_derivation
             f = lambda x: self.run('on_hw_derivation', name, device_info, bip44_derivation(int(x)))
             self.account_id_dialog(f)
 
@@ -301,7 +303,7 @@ class BaseWizard(object):
     def on_bip44(self, seed, passphrase, account_id):
         k = keystore.BIP32_KeyStore({})
         bip32_seed = keystore.bip39_to_seed(seed, passphrase)
-        derivation = "m/44'/105'/%d'"%account_id
+        derivation = bip44_derivation(account_id)
         k.add_xprv_from_seed(bip32_seed, 0, derivation)
         self.on_keystore(k)
 

@@ -220,6 +220,7 @@ class Abstract_Wallet(PrintError):
 
     def load_addresses(self):
         d = self.storage.get('addresses', {})
+        if type(d) != dict: d={}
         self.receiving_addresses = d.get('receiving', [])
         self.change_addresses = d.get('change', [])
 
@@ -346,7 +347,7 @@ class Abstract_Wallet(PrintError):
             elif y > 0:
                 return y, 0
             else:
-                return 1e12, 0
+                return 1e12 - y, 0
 
     def is_found(self):
         return self.history.values() != [[]] * len(self.history)
@@ -581,13 +582,13 @@ class Abstract_Wallet(PrintError):
                     return addr
 
     def add_transaction(self, tx_hash, tx):
-        is_coinbase = tx.inputs()[0].get('is_coinbase') == True
+        is_coinbase = tx.inputs()[0]['type'] == 'coinbase'
         with self.transaction_lock:
             # add inputs
             self.txi[tx_hash] = d = {}
             for txi in tx.inputs():
                 addr = txi.get('address')
-                if not txi.get('is_coinbase'):
+                if txi['type'] != 'coinbase':
                     prevout_hash = txi['prevout_hash']
                     prevout_n = txi['prevout_n']
                     ser = prevout_hash + ':%d'%prevout_n
@@ -1321,7 +1322,7 @@ class Imported_Wallet(Abstract_Wallet):
     # wallet made of imported addresses
 
     wallet_type = 'imported'
-    txin_type = 'unknown'
+    txin_type = 'address'
 
     def __init__(self, storage):
         Abstract_Wallet.__init__(self, storage)
@@ -1630,6 +1631,8 @@ class Simple_Deterministic_Wallet(Deterministic_Wallet, Simple_Wallet):
         self.keystore.check_password(password)
 
     def update_password(self, old_pw, new_pw, encrypt=False):
+        if old_pw is None and self.has_password():
+            raise InvalidPassword()
         self.keystore.update_password(old_pw, new_pw)
         self.save_keystore()
         self.storage.set_password(new_pw, encrypt)
@@ -1739,11 +1742,14 @@ class Multisig_Wallet(Deterministic_Wallet, P2SH):
         return [self.keystores[i] for i in sorted(self.keystores.keys())]
 
     def update_password(self, old_pw, new_pw, encrypt=False):
+        if old_pw is None and self.has_password():
+            raise InvalidPassword()
         for name, keystore in self.keystores.items():
             if keystore.can_change_password():
                 keystore.update_password(old_pw, new_pw)
                 self.storage.put(name, keystore.dump())
         self.storage.set_password(new_pw, encrypt)
+        self.storage.write()
 
     def check_password(self, password):
         self.keystore.check_password(password)

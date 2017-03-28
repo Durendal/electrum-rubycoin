@@ -272,7 +272,7 @@ class Commands:
         """Get private keys of addresses. You may pass a single wallet address, or a list of wallet addresses."""
         if is_address(address):
             return self.wallet.get_private_key(address, self._password)
-        domain = json_loads(address)
+        domain = address
         return [self.wallet.get_private_key(address, self._password) for address in domain]
 
     @command('w')
@@ -414,7 +414,7 @@ class Commands:
         coins = self.wallet.get_spendable_coins(domain)
         tx = self.wallet.make_unsigned_transaction(coins, final_outputs, self.config, fee, change_addr)
         if rbf:
-            tx.set_sequence(0)
+            tx.set_rbf(True)
         if not unsigned:
             self.wallet.sign_transaction(tx, self._password)
         return tx
@@ -430,7 +430,7 @@ class Commands:
     @command('wp')
     def paytomany(self, outputs, tx_fee=None, from_addr=None, change_addr=None, nocheck=False, unsigned=False, rbf=False):
         """Create a multi-output transaction. """
-        tx_fee = to_satoshis(tx_fee)
+        tx_fee = satoshis(tx_fee)
         domain = [from_addr] if from_addr else None
         tx = self._mktx(outputs, tx_fee, change_addr, domain, nocheck, unsigned, rbf)
         return tx.as_dict()
@@ -506,11 +506,12 @@ class Commands:
             out.append(item)
         return out
 
-    @command('w')
+    @command('n')
     def gettransaction(self, txid):
         """Retrieve a transaction. """
-        tx = self.wallet.transactions.get(txid) if self.wallet else None
-        if tx is None and self.network:
+        if self.wallet and txid in self.wallet.transactions:
+            tx = self.wallet.transactions[txid]
+        else:
             raw = self.network.synchronous_get(('blockchain.transaction.get', [txid]))
             if raw:
                 tx = Transaction(raw)
