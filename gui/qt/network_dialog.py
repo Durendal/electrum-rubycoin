@@ -185,7 +185,7 @@ class NetworkChoiceLayout(object):
         grid.setRowStretch(6, 1)
 
         # Blockchain Tab
-        from electrum import bitcoin
+        from electrum_stratis import stratis
         from amountedit import AmountEdit
         grid = QGridLayout(blockchain_tab)
         n = len(network.get_interfaces())

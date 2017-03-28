@@ -57,25 +57,25 @@ class Blockchain(util.PrintError):
     def verify_header(self, header, prev_header, bits, target):
         prev_hash = self.hash_header(prev_header)
 # <<<<<<< HEAD
-#         assert prev_hash == header.get('prev_block_hash'), "prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash'))
-#         # if stratis.TESTNET or stratis.NOLNET: return
-#         # assert bits == header.get('bits'), "bits mismatch: %s vs %s" % (bits, header.get('bits'))
-#         # _hash = self.hash_header(header)
-#         # assert int('0x' + _hash, 16) <= target, "insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target)
-# =======
+        assert prev_hash == header.get('prev_block_hash'), "prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash'))
+        if stratis.TESTNET or stratis.NOLNET: return
+        assert bits == header.get('bits'), "bits mismatch: %s vs %s" % (bits, header.get('bits'))
         _hash = self.hash_header(header)
-        if prev_hash != header.get('prev_block_hash'):
-            raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
-        if self.checkpoint_height == header.get('block_height') and self.checkpoint_hash != _hash:
-            raise BaseException('failed checkpoint')
-        if self.checkpoint_height == header.get('block_height'):
-            self.print_error("validated checkpoint", self.checkpoint_height)
-        if bitcoin.TESTNET:
-            return
-        if bits != header.get('bits'):
-            raise BaseException("bits mismatch: %s vs %s" % (bits, header.get('bits')))
-        if int('0x' + _hash, 16) > target:
-            raise BaseException("insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target))
+        assert int('0x' + _hash, 16) <= target, "insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target)
+# =======
+        # _hash = self.hash_header(header)
+        # if prev_hash != header.get('prev_block_hash'):
+        #     raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
+        # if self.checkpoint_height == header.get('block_height') and self.checkpoint_hash != _hash:
+        #     raise BaseException('failed checkpoint')
+        # if self.checkpoint_height == header.get('block_height'):
+        #     self.print_error("validated checkpoint", self.checkpoint_height)
+        # if stratis.TESTNET:
+        #     return
+        # if bits != header.get('bits'):
+        #     raise BaseException("bits mismatch: %s vs %s" % (bits, header.get('bits')))
+        # if int('0x' + _hash, 16) > target:
+        #     raise BaseException("insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target))
 #>>>>>>> upstream/master
 
     def verify_chain(self, chain):
@@ -182,51 +182,6 @@ class Blockchain(util.PrintError):
                 h = self.deserialize_header(h, block_height)
                 return h
 
-<<<<<<< HEAD
-    # def get_target(self, index, chain=None):
-    #     if index == 0:
-    #         return 0x1d00ffff, MAX_TARGET
-    #     first = self.read_header((index-1) * 2016)
-    #     last = self.read_header(index*2016 - 1)
-    #     if last is None:
-    #         for h in chain:
-    #             if h.get('block_height') == index*2016 - 1:
-    #                 last = h
-    #     assert last is not None
-    #     # bits to target
-    #     bits = last.get('bits')
-    #     bitsN = (bits >> 24) & 0xff
-    #     assert bitsN >= 0x03 and bitsN <= 0x1d, "First part of bits should be in [0x03, 0x1d]"
-    #     bitsBase = bits & 0xffffff
-    #     assert bitsBase >= 0x8000 and bitsBase <= 0x7fffff, "Second part of bits should be in [0x8000, 0x7fffff]"
-    #     target = bitsBase << (8 * (bitsN-3))
-    #     # new target
-    #     nActualTimespan = last.get('timestamp') - first.get('timestamp')
-    #     nTargetTimespan = 14 * 24 * 60 * 60
-    #     nActualTimespan = max(nActualTimespan, nTargetTimespan / 4)
-    #     nActualTimespan = min(nActualTimespan, nTargetTimespan * 4)
-    #     new_target = min(MAX_TARGET, (target*nActualTimespan) / nTargetTimespan)
-    #     # convert new target to bits
-    #     c = ("%064x" % new_target)[2:]
-    #     while c[:2] == '00' and len(c) > 6:
-    #         c = c[2:]
-    #     bitsN, bitsBase = len(c) / 2, int('0x' + c[:6], 16)
-    #     if bitsBase >= 0x800000:
-    #         bitsN += 1
-    #         bitsBase >>= 8
-    #     new_bits = bitsN << 24 | bitsBase
-    #     return new_bits, bitsBase << (8 * (bitsN-3))
-
-    def get_target(self, index, chain=None):
-        if chain is None:
-            chain = []  # Do not use mutables as default values!
-
-        max_target = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
-        if index == 0: return 0x1d00ffff, max_target
-
-        first = self.read_header((index-1)*2016)
-        last = self.read_header(index*2016-1)
-=======
     def BIP9(self, height, flag):
         v = self.read_header(height)['version']
         return ((v & 0xE0000000) == 0x20000000) and ((v & flag) == flag)
@@ -250,33 +205,19 @@ class Blockchain(util.PrintError):
         f.close()
 
     def get_target(self, index, chain=None):
-        if bitcoin.TESTNET:
+        if stratis.TESTNET:
             return 0, 0
         if index == 0:
             return 0x1d00ffff, MAX_TARGET
         first = self.read_header((index-1) * 2016)
         last = self.read_header(index*2016 - 1)
->>>>>>> upstream/master
         if last is None:
             for h in chain:
-                if h.get('block_height') == index*2016-1:
+                if h.get('block_height') == index*2016 - 1:
                     last = h
-
-        nActualTimespan = last.get('timestamp') - first.get('timestamp')
-        nTargetTimespan = 14*24*60*60
-        nActualTimespan = max(nActualTimespan, nTargetTimespan/4)
-        nActualTimespan = min(nActualTimespan, nTargetTimespan*4)
-
+        assert last is not None
+        # bits to target
         bits = last.get('bits')
-<<<<<<< HEAD
-        # convert to bignum
-        MM = 256*256*256
-        a = bits%MM
-        if a < 0x8000:
-            a *= 256
-        target = (a) * pow(2, 8 * (bits/MM - 3))
-
-=======
         bitsN = (bits >> 24) & 0xff
         if not (bitsN >= 0x03 and bitsN <= 0x1d):
             raise BaseException("First part of bits should be in [0x03, 0x1d]")
@@ -284,24 +225,22 @@ class Blockchain(util.PrintError):
         if not (bitsBase >= 0x8000 and bitsBase <= 0x7fffff):
             raise BaseException("Second part of bits should be in [0x8000, 0x7fffff]")
         target = bitsBase << (8 * (bitsN-3))
->>>>>>> upstream/master
         # new target
-        new_target = min( max_target, (target * nActualTimespan)/nTargetTimespan )
-
-        # convert it to bits
-        c = ("%064X"%new_target)[2:]
-        i = 31
-        while c[0:2]=="00":
+        nActualTimespan = last.get('timestamp') - first.get('timestamp')
+        nTargetTimespan = 14 * 24 * 60 * 60
+        nActualTimespan = max(nActualTimespan, nTargetTimespan / 4)
+        nActualTimespan = min(nActualTimespan, nTargetTimespan * 4)
+        new_target = min(MAX_TARGET, (target*nActualTimespan) / nTargetTimespan)
+        # convert new target to bits
+        c = ("%064x" % new_target)[2:]
+        while c[:2] == '00' and len(c) > 6:
             c = c[2:]
-            i -= 1
-
-        c = int('0x'+c[0:6],16)
-        if c >= 0x800000:
-            c /= 256
-            i += 1
-
-        new_bits = c + MM * i
-        return new_bits, new_target
+        bitsN, bitsBase = len(c) / 2, int('0x' + c[:6], 16)
+        if bitsBase >= 0x800000:
+            bitsN += 1
+            bitsBase >>= 8
+        new_bits = bitsN << 24 | bitsBase
+        return new_bits, bitsBase << (8 * (bitsN-3))
 
     def connect_header(self, chain, header):
         '''Builds a header chain until it connects.  Returns True if it has
@@ -346,7 +285,7 @@ class Blockchain(util.PrintError):
 
     def get_checkpoint(self):
         height = self.config.get('checkpoint_height', 0)
-        value = self.config.get('checkpoint_value', bitcoin.GENESIS)
+        value = self.config.get('checkpoint_value', stratis.GENESIS)
         return (height, value)
 
     def set_checkpoint(self, height, value):
