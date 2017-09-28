@@ -47,7 +47,7 @@ Development version
 
 Check out the code from Github::
 
-    git clone git://github.com/rubycoinproject/electrum-rubycoin
+    git clone git://github.com/Durendal/electrum-rubycoin
     cd electrum-rubycoin
 
 Run install (this should install dependencies)::
