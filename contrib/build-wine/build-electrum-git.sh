@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # You probably need to update only this link
-ELECTRUM_GIT_URL=git://github.com/rubycoinproject/electrum-rubycoin.git
+ELECTRUM_GIT_URL=git://github.com/Durendal/electrum-rubycoin.git
 BRANCH=master
 NAME_ROOT=electrum-rubycoin
 

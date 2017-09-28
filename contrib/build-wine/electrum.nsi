@@ -7,7 +7,7 @@
 ;Variables
 
   !define PRODUCT_NAME "Electrum-Rubycoin"
-  !define PRODUCT_WEB_SITE "https://github.com/rubycoinproject/electrum-rubycoin"
+  !define PRODUCT_WEB_SITE "https://github.com/Durendal/electrum-rubycoin"
   !define PRODUCT_PUBLISHER "Rubycoin"
   !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 

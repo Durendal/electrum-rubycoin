@@ -108,8 +108,8 @@ class Bit2C(ExchangeBase):
 class BitcoinVenezuela(ExchangeBase):
     def get_rates(self, ccy):
         json = self.get_json('api.bitcoinvenezuela.com', '/')
-        rates = [(r, json['STRAT'][r]) for r in json['STRAT']
-                 if json['STRAT'][r] is not None]  # Giving NULL sometimes
+        rates = [(r, json['RBY'][r]) for r in json['RBY']
+                 if json['RBY'][r] is not None]  # Giving NULL sometimes
         return dict(rates)
 
     def protocol(self):
@@ -120,8 +120,8 @@ class BitcoinVenezuela(ExchangeBase):
 
     def historical_rates(self, ccy):
         json = self.get_json('api.bitcoinvenezuela.com',
-                             '/historical/index.php?coin=STRAT')
-        return json[ccy +'_STRAT']
+                             '/historical/index.php?coin=RBY')
+        return json[ccy +'_RBY']
 
 class Bitfinex(ExchangeBase):
     def get_rates(self, ccy):
@@ -145,8 +145,8 @@ class BTCe(ExchangeBase):
 
 class CaVirtEx(ExchangeBase):
     def get_rates(self, ccy):
-        json = self.get_json('www.cavirtex.com', '/api2/ticker.json?currencypair=STRATCAD')
-        return {'CAD': Decimal(json['ticker']['STRATCAD']['last'])}
+        json = self.get_json('www.cavirtex.com', '/api2/ticker.json?currencypair=RBYCAD')
+        return {'CAD': Decimal(json['ticker']['RBYCAD']['last'])}
 
 class CoinSpot(ExchangeBase):
     def get_rates(self, ccy):
@@ -156,13 +156,13 @@ class CoinSpot(ExchangeBase):
 class GoCoin(ExchangeBase):
     def get_rates(self, ccy):
         json = self.get_json('x.g0cn.com', '/prices')
-        strat_prices = json['prices']['STRAT']
+        strat_prices = json['prices']['RBY']
         return dict([(r, Decimal(strat_prices[r])) for r in strat_prices])
 
 class HitBTC(ExchangeBase):
     def get_rates(self, ccy):
         ccys = ['EUR', 'USD']
-        json = self.get_json('api.hitbtc.com', '/api/1/public/STRAT%s/ticker' % ccy)
+        json = self.get_json('api.hitbtc.com', '/api/1/public/RBY%s/ticker' % ccy)
         result = dict.fromkeys(ccys)
         if ccy in ccys:
             result[ccy] = Decimal(json['last'])
@@ -171,21 +171,21 @@ class HitBTC(ExchangeBase):
 class Kraken(ExchangeBase):
     def get_rates(self, ccy):
         dicts = self.get_json('api.kraken.com', '/0/public/AssetPairs')
-        pairs = [k for k in dicts['result'] if k.startswith('XSTRATZ')]
+        pairs = [k for k in dicts['result'] if k.startswith('XRBYZ')]
         json = self.get_json('api.kraken.com',
                              '/0/public/Ticker?pair=%s' % ','.join(pairs))
         ccys = [p[5:] for p in pairs]
         result = dict.fromkeys(ccys)
-        result[ccy] = Decimal(json['result']['XSTRATZ'+ccy]['c'][0])
+        result[ccy] = Decimal(json['result']['XRBYZ'+ccy]['c'][0])
         return result
 
     def history_ccys(self):
         return ['EUR', 'USD']
 
     def historical_rates(self, ccy):
-        query = '/0/public/OHLC?pair=STRAT%s&interval=1440' % ccy
+        query = '/0/public/OHLC?pair=RBY%s&interval=1440' % ccy
         json = self.get_json('api.kraken.com', query)
-        history = json['result']['XSTRATZ'+ccy]
+        history = json['result']['XRBYZ'+ccy]
         return dict([(time.strftime('%Y-%m-%d', time.localtime(t[0])), t[4])
                                     for t in history])
 

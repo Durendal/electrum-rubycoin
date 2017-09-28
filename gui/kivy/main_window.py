@@ -102,7 +102,7 @@ class ElectrumWindow(App):
             Clock.schedule_once(lambda dt: self.history_screen.update())
 
     def _get_bu(self):
-        return self.electrum_config.get('base_unit', 'STRAT')
+        return self.electrum_config.get('base_unit', 'RBY')
 
     def _set_bu(self, value):
         assert value in base_units.keys()

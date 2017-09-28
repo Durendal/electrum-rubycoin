@@ -530,7 +530,7 @@ class Commands:
             PR_PAID: 'Paid',
             PR_EXPIRED: 'Expired',
         }
-        out['amount (STRAT)'] = format_satoshis(out.get('amount'))
+        out['amount (RBY)'] = format_satoshis(out.get('amount'))
         out['status'] = pr_str[out.get('status', PR_UNKNOWN)]
         return out
 
@@ -638,8 +638,8 @@ param_descriptions = {
     'pubkey': 'Public key',
     'message': 'Clear text message. Use quotes if it contains spaces.',
     'encrypted': 'Encrypted message',
-    'amount': 'Amount to be sent (in STRAT). Type \'!\' to send the maximum available.',
-    'requested_amount': 'Requested amount (in STRAT).',
+    'amount': 'Amount to be sent (in RBY). Type \'!\' to send the maximum available.',
+    'requested_amount': 'Requested amount (in RBY).',
     'outputs': 'list of ["address", amount]',
 }
 
@@ -654,7 +654,7 @@ command_options = {
     'show_labels': ("-l", "--labels",      "Show the labels of listed addresses"),
     'nocheck':     (None, "--nocheck",     "Do not verify aliases"),
     'imax':        (None, "--imax",        "Maximum number of inputs"),
-    'tx_fee':      ("-f", "--fee",         "Transaction fee (in STRAT)"),
+    'tx_fee':      ("-f", "--fee",         "Transaction fee (in RBY)"),
     'from_addr':   ("-F", "--from",        "Source address. If it isn't in the wallet, it will ask for the private key unless supplied in the format public_key:private_key. It's not saved in the wallet."),
     'change_addr': ("-c", "--change",      "Change address. Default is a spare address, or the source address if it's not in the wallet"),
     'nbits':       (None, "--nbits",       "Number of bits of entropy"),

@@ -498,7 +498,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def show_report_bug(self):
         msg = ' '.join([
             _("Please report any bugs as issues on github:<br/>"),
-            "<a href=\"https://github.com/rubycoinproject/electrum-rubycoin/issues\">https://github.com/rubycoinproject/electrum-rubycoin/issues</a><br/><br/>",
+            "<a href=\"https://github.com/Durendal/electrum-rubycoin/issues\">https://github.com/Durendal/electrum-rubycoin/issues</a><br/><br/>",
             _("Before reporting a bug, upgrade to the most recent version of Electrum (latest release or git HEAD), and include the version number in your report."),
             _("Try to explain not only what the bug is, but how it occurs.")
          ])
@@ -581,11 +581,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def base_unit(self):
         assert self.decimal_point in [2, 5, 8]
         if self.decimal_point == 2:
-            return 'uSTRAT'
+            return 'uRBY'
         if self.decimal_point == 5:
-            return 'mSTRAT'
+            return 'mRBY'
         if self.decimal_point == 8:
-            return 'STRAT'
+            return 'RBY'
         raise Exception('Unknown base unit')
 
     def connect_fields(self, window, btc_e, fiat_e, fee_e):
@@ -2444,9 +2444,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         SSL_id_e.setReadOnly(True)
         id_widgets.append((SSL_id_label, SSL_id_e))
 
-        units = ['STRAT', 'mSTRAT', 'uSTRAT']
+        units = ['RBY', 'mRBY', 'uRBY']
         msg = _('Base unit of your wallet.')\
-              + '\n1STRAT=1000mSTRAT.\n' \
+              + '\n1RBY=1000mRBY.\n' \
               + _(' These settings affects the fields in the Send tab')+' '
         unit_label = HelpLabel(_('Base unit') + ':', msg)
         unit_combo = QComboBox()
@@ -2458,11 +2458,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 return
             edits = self.amount_e, self.fee_e, self.receive_amount_e
             amounts = [edit.get_amount() for edit in edits]
-            if unit_result == 'STRAT':
+            if unit_result == 'RBY':
                 self.decimal_point = 8
-            elif unit_result == 'mSTRAT':
+            elif unit_result == 'mRBY':
                 self.decimal_point = 5
-            elif unit_result == 'uSTRAT':
+            elif unit_result == 'uRBY':
                 self.decimal_point = 2
             else:
                 raise Exception('Unknown base unit')
