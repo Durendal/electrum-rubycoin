@@ -1,4 +1,4 @@
-Electrum-Stratis - Lightweight Stratis client
+Electrum-Rubycoin - Lightweight Rubycoin client
 ==========================================
 
 ::
@@ -93,7 +93,7 @@ Mac OS X
     # On Homebrew installs: 
     ARCHFLAGS="-arch i386 -arch x86_64" sudo python setup-release.py py2app --includes sip
     
-    sudo hdiutil create -fs HFS+ -volname "Electrum-Stratis" -srcfolder dist/Electrum-Stratis.app dist/electrum-rubycoin-VERSION-macosx.dmg
+    sudo hdiutil create -fs HFS+ -volname "Electrum-Rubycoin" -srcfolder dist/Electrum-Rubycoin.app dist/electrum-rubycoin-VERSION-macosx.dmg
 
 Windows
 -------
