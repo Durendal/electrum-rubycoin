@@ -1,5 +1,5 @@
 from labels import LabelsPlugin
-from electrum_stratis.plugins import hook
+from electrum_rubycoin.plugins import hook
 
 class Plugin(LabelsPlugin):
 
@@ -11,4 +11,3 @@ class Plugin(LabelsPlugin):
     def on_pulled(self, wallet):
         self.print_error('on pulled')
         self.window.update_tab('history')
-

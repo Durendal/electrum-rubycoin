@@ -28,12 +28,12 @@ if platform.system() in ['Linux', 'FreeBSD', 'DragonFly']:
         else:
             usr_share = os.path.expanduser('~/.local/share')
     data_files += [
-        (os.path.join(usr_share, 'applications/'), ['electrum-stratis.desktop']),
-        (os.path.join(usr_share, 'pixmaps/'), ['icons/electrum-stratis.png'])
+        (os.path.join(usr_share, 'applications/'), ['electrum-rubycoin.desktop']),
+        (os.path.join(usr_share, 'pixmaps/'), ['icons/electrum-rubycoin.png'])
     ]
 
 setup(
-    name="Electrum-Stratis",
+    name="Electrum-Rubycoin",
     version=version.ELECTRUM_VERSION,
     install_requires=[
         'slowaes>=0.1a1',
@@ -46,39 +46,39 @@ setup(
         'jsonrpclib',
     ],
     packages=[
-        'electrum_stratis',
-        'electrum_stratis_gui',
-        'electrum_stratis_gui.qt',
-        'electrum_stratis_plugins',
-        'electrum_stratis_plugins.audio_modem',
-        'electrum_stratis_plugins.cosigner_pool',
-        'electrum_stratis_plugins.email_requests',
-        'electrum_stratis_plugins.exchange_rate',
-        'electrum_stratis_plugins.hw_wallet',
-        'electrum_stratis_plugins.keepkey',
-        'electrum_stratis_plugins.labels',
-        'electrum_stratis_plugins.ledger',
-        'electrum_stratis_plugins.plot',
-        'electrum_stratis_plugins.trezor',
-        'electrum_stratis_plugins.virtualkeyboard',
+        'electrum_rubycoin',
+        'electrum_rubycoin_gui',
+        'electrum_rubycoin_gui.qt',
+        'electrum_rubycoin_plugins',
+        'electrum_rubycoin_plugins.audio_modem',
+        'electrum_rubycoin_plugins.cosigner_pool',
+        'electrum_rubycoin_plugins.email_requests',
+        'electrum_rubycoin_plugins.exchange_rate',
+        'electrum_rubycoin_plugins.hw_wallet',
+        'electrum_rubycoin_plugins.keepkey',
+        'electrum_rubycoin_plugins.labels',
+        'electrum_rubycoin_plugins.ledger',
+        'electrum_rubycoin_plugins.plot',
+        'electrum_rubycoin_plugins.trezor',
+        'electrum_rubycoin_plugins.virtualkeyboard',
     ],
     package_dir={
-        'electrum_stratis': 'lib',
-        'electrum_stratis_gui': 'gui',
-        'electrum_stratis_plugins': 'plugins',
+        'electrum_rubycoin': 'lib',
+        'electrum_rubycoin_gui': 'gui',
+        'electrum_rubycoin_plugins': 'plugins',
     },
     package_data={
-        'electrum_stratis': [
+        'electrum_rubycoin': [
             'www/index.html',
             'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',
         ]
     },
-    scripts=['electrum-stratis'],
+    scripts=['electrum-rubycoin'],
     data_files=data_files,
-    description="Lightweight Stratis Wallet",
+    description="Lightweight rubycoin Wallet",
     author="dev0tion",
     license="MIT Licence",
-    url="http://www.stratisplatform.com",
-    long_description="""Lightweight Stratis Wallet"""
+    url="http://www.rubycoinplatform.com",
+    long_description="""Lightweight rubycoin Wallet"""
 )

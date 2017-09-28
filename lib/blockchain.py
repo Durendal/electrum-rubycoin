@@ -27,8 +27,8 @@
 
 import os
 import util
-import stratis
-from stratis import *
+import rubycoin
+from rubycoin import *
 
 MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 
@@ -59,7 +59,7 @@ class Blockchain(util.PrintError):
         #assert bits == header.get('bits'), "bits mismatch: %s vs %s" % (bits, header.get('bits'))
         #_hash = self.hash_header(header)
         #assert int('0x' + _hash, 16) <= target, "insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target)
-        
+
     def verify_chain(self, chain):
         first_header = chain[0]
         prev_header = self.read_header(first_header.get('block_height') - 1)
@@ -114,8 +114,8 @@ class Blockchain(util.PrintError):
         try:
             import urllib, socket
             socket.setdefaulttimeout(30)
-            self.print_error("downloading ", stratis.HEADERS_URL)
-            urllib.urlretrieve(stratis.HEADERS_URL, filename + '.tmp')
+            self.print_error("downloading ", rubycoin.HEADERS_URL)
+            urllib.urlretrieve(rubycoin.HEADERS_URL, filename + '.tmp')
             os.rename(filename + '.tmp', filename)
             self.print_error("done.")
         except Exception:

@@ -5,10 +5,10 @@ from io import BytesIO
 import sys
 import platform
 
-from electrum_stratis.plugins import BasePlugin, hook
-from electrum_stratis_gui.qt.util import WaitingDialog, EnterButton, WindowModalDialog
-from electrum_stratis.util import print_msg, print_error
-from electrum_stratis.i18n import _
+from electrum_rubycoin.plugins import BasePlugin, hook
+from electrum_rubycoin_gui.qt.util import WaitingDialog, EnterButton, WindowModalDialog
+from electrum_rubycoin.util import print_msg, print_error
+from electrum_rubycoin.i18n import _
 
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *

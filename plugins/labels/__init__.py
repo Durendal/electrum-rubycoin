@@ -1,4 +1,4 @@
-from electrum_stratis.i18n import _
+from electrum_rubycoin.i18n import _
 
 fullname = _('LabelSync')
 description = ' '.join([
@@ -6,4 +6,3 @@ description = ' '.join([
     _("Labels, transactions IDs and addresses are encrypted before they are sent to the remote server.")
 ])
 available_for = ['qt', 'kivy']
-

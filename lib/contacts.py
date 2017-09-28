@@ -25,7 +25,7 @@ import sys
 import re
 import dns
 
-import stratis
+import rubycoin
 import dnssec
 from util import StoreDict, print_error
 from i18n import _
@@ -38,13 +38,13 @@ class Contacts(StoreDict):
         # backward compatibility
         for k, v in self.items():
             _type, n = v
-            if _type == 'address' and stratis.is_address(n):
+            if _type == 'address' and rubycoin.is_address(n):
                 self.pop(k)
                 self[n] = ('address', k)
 
 
     def resolve(self, k):
-        if stratis.is_address(k):
+        if rubycoin.is_address(k):
             return {
                 'address': k,
                 'type': 'address'
@@ -65,7 +65,7 @@ class Contacts(StoreDict):
                 'type': 'openalias',
                 'validated': validated
             }
-        raise Exception("Invalid Stratis address or alias", k)
+        raise Exception("Invalid Rubycoin address or alias", k)
 
     def resolve_openalias(self, url):
         # support email-style addresses, per the OA standard
@@ -89,4 +89,3 @@ class Contacts(StoreDict):
             return regex.search(haystack).groups()[0]
         except AttributeError:
             return None
-

@@ -8,11 +8,11 @@ import traceback
 import csv
 from decimal import Decimal
 
-from electrum_stratis.stratis import COIN
-from electrum_stratis.plugins import BasePlugin, hook
-from electrum_stratis.i18n import _
-from electrum_stratis.util import PrintError, ThreadJob
-from electrum_stratis.util import format_satoshis
+from electrum_rubycoin.rubycoin import COIN
+from electrum_rubycoin.plugins import BasePlugin, hook
+from electrum_rubycoin.i18n import _
+from electrum_rubycoin.util import PrintError, ThreadJob
+from electrum_rubycoin.util import format_satoshis
 
 
 # See https://en.wikipedia.org/wiki/ISO_4217
@@ -197,16 +197,16 @@ class OKCoin(ExchangeBase):
 class MercadoBitcoin(ExchangeBase):
     def get_rates(self,ccy):
         json = self.get_json('mercadobitcoin.net',
-                                "/api/ticker/ticker_stratis")
+                                "/api/ticker/ticker_rubycoin")
         return {'BRL': Decimal(json['ticker']['last'])}
-    
+
     def history_ccys(self):
         return ['BRL']
 
 class Bitcointoyou(ExchangeBase):
     def get_rates(self,ccy):
         json = self.get_json('bitcointoyou.com',
-                                "/API/ticker_stratis.aspx")
+                                "/API/ticker_rubycoin.aspx")
         return {'BRL': Decimal(json['ticker']['last'])}
 
     def history_ccys(self):

@@ -25,7 +25,7 @@
 
 
 from util import ThreadJob
-from stratis import *
+from rubycoin import *
 
 
 class SPV(ThreadJob):

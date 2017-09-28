@@ -37,8 +37,8 @@ from decimal import Decimal
 
 import util
 from util import print_msg, format_satoshis, print_stderr
-import stratis
-from stratis import is_address, hash_160_to_bc_address, hash_160, COIN, TYPE_ADDRESS
+import rubycoin
+from rubycoin import is_address, hash_160_to_bc_address, hash_160, COIN, TYPE_ADDRESS
 from transaction import Transaction
 import paymentrequest
 from paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
@@ -115,8 +115,8 @@ class Commands:
     @command('wn')
     def restore(self, text):
         """Restore a wallet from text. Text can be a seed phrase, a master
-        public key, a master private key, a list of Stratis addresses
-        or Stratis private keys. If you want to be prompted for your
+        public key, a master private key, a list of Rubycoin addresses
+        or Rubycoin private keys. If you want to be prompted for your
         seed, type '?' or ':' (concealed) """
         raise BaseException('Not a JSON-RPC command')
 
@@ -226,8 +226,8 @@ class Commands:
         """Sign a transaction. The wallet keys will be used unless a private key is provided."""
         tx = Transaction(tx)
         if privkey:
-            pubkey = stratis.public_key_from_private_key(privkey)
-            h160 = stratis.hash_160(pubkey.decode('hex'))
+            pubkey = rubycoin.public_key_from_private_key(privkey)
+            h160 = rubycoin.hash_160(pubkey.decode('hex'))
             x_pubkey = 'fd' + (chr(0) + h160).encode('hex')
             tx.sign({x_pubkey:privkey})
         else:
@@ -280,7 +280,7 @@ class Commands:
     @command('')
     def dumpprivkeys(self):
         """Deprecated."""
-        return "This command is deprecated. Use a pipe instead: 'electrum-stratis listaddresses | electrum-stratis getprivatekeys - '"
+        return "This command is deprecated. Use a pipe instead: 'electrum-rubycoin listaddresses | electrum-rubycoin getprivatekeys - '"
 
     @command('')
     def validateaddress(self, address):
@@ -395,7 +395,7 @@ class Commands:
     def verifymessage(self, address, signature, message):
         """Verify a signature."""
         sig = base64.b64decode(signature)
-        return stratis.verify_message(address, sig, message)
+        return rubycoin.verify_message(address, sig, message)
 
     def _mktx(self, outputs, fee, change_addr, domain, nocheck, unsigned, rbf):
         self.nocheck = nocheck
@@ -455,7 +455,7 @@ class Commands:
 
     @command('w')
     def setlabel(self, key, label):
-        """Assign a label to an item. Item may be a Stratis address or a
+        """Assign a label to an item. Item may be a Rubycoin address or a
         transaction ID"""
         self.wallet.set_label(key, label)
 
@@ -516,7 +516,7 @@ class Commands:
     @command('')
     def encrypt(self, pubkey, message):
         """Encrypt a message with a public key. Use quotes if the message contains whitespaces."""
-        return stratis.encrypt_message(message, pubkey)
+        return rubycoin.encrypt_message(message, pubkey)
 
     @command('wp')
     def decrypt(self, pubkey, encrypted):
@@ -627,8 +627,8 @@ class Commands:
 
 param_descriptions = {
     'privkey': 'Private key. Type \'?\' to get a prompt.',
-    'destination': 'Stratis address, contact or alias',
-    'address': 'Stratis address',
+    'destination': 'Rubycoin address, contact or alias',
+    'address': 'Rubycoin address',
     'seed': 'Seed phrase',
     'txid': 'Transaction ID',
     'pos': 'Position',
@@ -698,10 +698,10 @@ config_variables = {
         'requests_dir': 'directory where a bip70 file will be written.',
         'ssl_privkey': 'Path to your SSL private key, needed to sign the request.',
         'ssl_chain': 'Chain of SSL certificates, needed for signed requests. Put your certificate at the top and the root CA at the end',
-        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of stratis: URIs. Example: \"(\'file:///var/www/\',\'https://electrum-stratis.org/\')\"',
+        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of rubycoin: URIs. Example: \"(\'file:///var/www/\',\'https://electrum-rubycoin.org/\')\"',
     },
     'listrequests':{
-        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of stratis: URIs. Example: \"(\'file:///var/www/\',\'https://electrum-stratis.org/\')\"',
+        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of rubycoin: URIs. Example: \"(\'file:///var/www/\',\'https://electrum-rubycoin.org/\')\"',
     }
 }
 
@@ -744,17 +744,17 @@ def get_parser():
     group = parent_parser.add_argument_group('global options')
     group.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False, help="Show debugging information")
     group.add_argument("-D", "--dir", dest="electrum_path", help="electrum directory")
-    group.add_argument("-P", "--portable", action="store_true", dest="portable", default=False, help="Use local 'electrum-stratis_data' directory")
+    group.add_argument("-P", "--portable", action="store_true", dest="portable", default=False, help="Use local 'electrum-rubycoin_data' directory")
     group.add_argument("-w", "--wallet", dest="wallet_path", help="wallet path")
     group.add_argument("--testnet", action="store_true", dest="testnet", default=False, help="Use Testnet")
     # create main parser
     parser = argparse.ArgumentParser(
         parents=[parent_parser],
-        epilog="Run 'electrum-stratis help <command>' to see the help for a command")
+        epilog="Run 'electrum-rubycoin help <command>' to see the help for a command")
     subparsers = parser.add_subparsers(dest='cmd', metavar='<command>')
     # gui
     parser_gui = subparsers.add_parser('gui', parents=[parent_parser], description="Run Electrum's Graphical User Interface.", help="Run GUI (default)")
-    parser_gui.add_argument("url", nargs='?', default=None, help="stratis URI (or bip70 file)")
+    parser_gui.add_argument("url", nargs='?', default=None, help="rubycoin URI (or bip70 file)")
     #parser_gui.set_defaults(func=run_gui)
     parser_gui.add_argument("-g", "--gui", dest="gui", help="select graphical user interface", choices=['qt', 'kivy', 'text', 'stdio'])
     parser_gui.add_argument("-o", "--offline", action="store_true", dest="offline", default=False, help="Run offline")

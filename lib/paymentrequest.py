@@ -40,17 +40,17 @@ try:
 except ImportError:
     sys.exit("Error: could not find paymentrequest_pb2.py. Create it with 'protoc --proto_path=lib/ --python_out=lib/ lib/paymentrequest.proto'")
 
-import stratis
+import rubycoin
 import util
 from util import print_error
 import transaction
 import x509
 import rsakey
 
-from stratis import TYPE_ADDRESS
+from rubycoin import TYPE_ADDRESS
 
-REQUEST_HEADERS = {'Accept': 'application/stratis-paymentrequest', 'User-Agent': 'Electrum'}
-ACK_HEADERS = {'Content-Type':'application/stratis-payment','Accept':'application/stratis-paymentack','User-Agent':'Electrum'}
+REQUEST_HEADERS = {'Accept': 'application/rubycoin-paymentrequest', 'User-Agent': 'Electrum'}
+ACK_HEADERS = {'Content-Type':'application/rubycoin-payment','Accept':'application/rubycoin-paymentack','User-Agent':'Electrum'}
 
 ca_path = requests.certs.where()
 ca_list, ca_keyID = x509.load_certificates(ca_path)
@@ -70,9 +70,9 @@ def get_payment_request(url):
         try:
             response = requests.request('GET', url, headers=REQUEST_HEADERS)
             response.raise_for_status()
-            # Guard against `stratis:`-URIs with invalid payment request URLs
+            # Guard against `rubycoin:`-URIs with invalid payment request URLs
             if "Content-Type" not in response.headers \
-            or response.headers["Content-Type"] != "application/stratis-paymentrequest":
+            or response.headers["Content-Type"] != "application/rubycoin-paymentrequest":
                 data = None
                 error = "payment URL not pointing to a payment request handling server"
             else:
@@ -109,7 +109,7 @@ class PaymentRequest:
     def parse(self, r):
         if self.error:
             return
-        self.id = stratis.sha256(r)[0:16].encode('hex')
+        self.id = rubycoin.sha256(r)[0:16].encode('hex')
         try:
             self.data = pb2.PaymentRequest()
             self.data.ParseFromString(r)
@@ -201,7 +201,7 @@ class PaymentRequest:
             address = info.get('address')
             pr.signature = ''
             message = pr.SerializeToString()
-            if stratis.verify_message(address, sig, message):
+            if rubycoin.verify_message(address, sig, message):
                 self.error = 'Verified with DNSSEC'
                 return True
             else:
@@ -324,9 +324,9 @@ def sign_request_with_alias(pr, alias, alias_privkey):
     pr.pki_type = 'dnssec+strat'
     pr.pki_data = str(alias)
     message = pr.SerializeToString()
-    ec_key = stratis.regenerate_key(alias_privkey)
-    address = stratis.address_from_private_key(alias_privkey)
-    compressed = stratis.is_compressed(alias_privkey)
+    ec_key = rubycoin.regenerate_key(alias_privkey)
+    address = rubycoin.address_from_private_key(alias_privkey)
+    compressed = rubycoin.is_compressed(alias_privkey)
     pr.signature = ec_key.sign_message(message, compressed, address)
 
 
@@ -505,4 +505,3 @@ class InvoiceStore(object):
     def sorted_list(self):
         # sort
         return self.invoices.values()
-

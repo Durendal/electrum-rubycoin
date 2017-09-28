@@ -25,9 +25,9 @@
 
 
 from util import *
-from electrum_stratis.i18n import _
-from electrum_stratis.util import block_explorer_URL, format_satoshis, format_time
-from electrum_stratis.plugins import run_hook
+from electrum_rubycoin.i18n import _
+from electrum_rubycoin.util import block_explorer_URL, format_satoshis, format_time
+from electrum_rubycoin.plugins import run_hook
 
 
 class InvoiceList(MyTreeWidget):
@@ -62,7 +62,7 @@ class InvoiceList(MyTreeWidget):
         if not item:
             return
         key = str(item.data(0, 32).toString())
-        column = self.currentColumn()        
+        column = self.currentColumn()
         column_title = self.headerItem().text(column)
         column_data = item.text(column)
         pr = self.parent.invoices.get(key)

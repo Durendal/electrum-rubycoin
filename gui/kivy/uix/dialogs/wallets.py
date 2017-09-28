@@ -3,8 +3,8 @@ from kivy.factory import Factory
 from kivy.properties import ObjectProperty
 from kivy.lang import Builder
 
-from electrum_stratis_gui.kivy.i18n import _
-from electrum_stratis.util import base_units
+from electrum_rubycoin_gui.kivy.i18n import _
+from electrum_rubycoin.util import base_units
 
 import os
 from label_dialog import LabelDialog
@@ -61,4 +61,3 @@ class WalletDialog(Factory.Popup):
 
     def open_wallet(self, app):
         app.load_wallet_by_name(self.ids.wallet_selector.selection[0])
-

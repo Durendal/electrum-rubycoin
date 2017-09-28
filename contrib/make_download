@@ -17,17 +17,17 @@ string = string.replace("##VERSION_ANDROID##", version_android)
 string = string.replace("##VERSION_APK##", version_apk)
 
 files = {
-    'tgz': "Electrum-Stratis-%s.tar.gz" % version,
-    'zip': "Electrum-Stratis-%s.zip" % version,
-    'mac': "electrum-stratis-%s.dmg" % version_mac,
-    'win': "electrum-stratis-%s.exe" % version_win,
-    'win_setup': "electrum-stratis-%s-setup.exe" % version_win,
-    'win_portable': "electrum-stratis-%s-portable.exe" % version_win,
+    'tgz': "Electrum-Rubycoin-%s.tar.gz" % version,
+    'zip': "Electrum-Rubycoin-%s.zip" % version,
+    'mac': "electrum-rubycoin-%s.dmg" % version_mac,
+    'win': "electrum-rubycoin-%s.exe" % version_win,
+    'win_setup': "electrum-rubycoin-%s-setup.exe" % version_win,
+    'win_portable': "electrum-rubycoin-%s-portable.exe" % version_win,
 }
 
 for k, n in files.items():
     path = "dist/%s"%n
-    link = "http://stratisplatform.com/download/%s"%n
+    link = "http://rubycoinplatform.com/download/%s"%n
     if not os.path.exists(path):
         os.system("wget -q %s -O %s" % (link, path))
     if not os.path.getsize(path):
@@ -49,5 +49,3 @@ for k, n in files.items():
 
 with open(download_page,'w') as f:
     f.write(string)
-
-

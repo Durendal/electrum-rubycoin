@@ -3,8 +3,8 @@
 # A simple script that connects to a server and displays block headers
 
 import time
-from electrum_stratis import SimpleConfig, Network
-from electrum_stratis.util import print_msg, json_encode
+from electrum_rubycoin import SimpleConfig, Network
+from electrum_rubycoin.util import print_msg, json_encode
 
 # start network
 c = SimpleConfig()

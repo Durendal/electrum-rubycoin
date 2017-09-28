@@ -1,12 +1,12 @@
 from PyQt4.QtGui import *
-from electrum_stratis.i18n import _
+from electrum_rubycoin.i18n import _
 
 
 import datetime
 from collections import defaultdict
 
-from electrum_stratis.util import format_satoshis
-from electrum_stratis.stratis import COIN
+from electrum_rubycoin.util import format_satoshis
+from electrum_rubycoin.rubycoin import COIN
 
 import matplotlib
 matplotlib.use('Qt4Agg')

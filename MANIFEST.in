@@ -1,9 +1,9 @@
 include LICENCE RELEASE-NOTES AUTHORS
 include README.rst
-include electrum-stratis.conf.sample
-include electrum-stratis.desktop
+include electrum-rubycoin.conf.sample
+include electrum-rubycoin.desktop
 include *.py
-include electrum-stratis
+include electrum-rubycoin
 recursive-include lib *.py
 recursive-include gui *.py
 recursive-include plugins *.py
@@ -13,4 +13,3 @@ include app.fil
 include icons.qrc
 recursive-include icons *
 recursive-include scripts *
-

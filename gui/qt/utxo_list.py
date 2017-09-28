@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 from util import *
-from electrum_stratis.i18n import _
+from electrum_rubycoin.i18n import _
 
 
 class UTXOList(MyTreeWidget):
@@ -55,7 +55,7 @@ class UTXOList(MyTreeWidget):
             self.addChild(utxo_item)
 
     def create_menu(self, position):
-        from electrum_stratis.wallet import Multisig_Wallet
+        from electrum_rubycoin.wallet import Multisig_Wallet
         selected = [ x.data(0, Qt.UserRole).toString() for x in self.selectedItems()]
         if not selected:
             return
@@ -66,4 +66,3 @@ class UTXOList(MyTreeWidget):
             menu.addAction(_("Copy Address"), lambda: self.parent.app.clipboard().setText(coin.get('address')))
         menu.addAction(_("Spend"), lambda: self.parent.spend_coins(coins))
         menu.exec_(self.viewport().mapToGlobal(position))
-
