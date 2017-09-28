@@ -46,7 +46,7 @@ HEADERS_URL = "https://headers.electrum.org/blockchain_headers"
 
 SERVERLIST = 'servers.json'
 DEFAULT_PORTS = {'t':'55937', 's':'55938'}
-DEFAULT_SERVERS = read_json_dict('servers.json')
+#DEFAULT_SERVERS = read_json_dict('servers.json')
 
 GENESIS = "00000760e24f1ad47f7a6e912bc9ed2b9ce013fc85ba217da8b079762f6b0058"
 
