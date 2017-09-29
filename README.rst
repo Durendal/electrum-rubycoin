@@ -1,3 +1,9 @@
+Donations:
+==========
+RBY: RN6GAnYY2d4AJVd9CKF4nnnZpxLZyCgsYb
+BTC: 19kaDYhRLYrQpgbnuGeysGKQ7d9FB25ot1
+
+
 Electrum-Rubycoin - Lightweight Rubycoin client
 ==========================================
 
@@ -87,12 +93,12 @@ Mac OS X
 
 ::
 
-    # On MacPorts installs: 
+    # On MacPorts installs:
     sudo python setup-release.py py2app
-    
-    # On Homebrew installs: 
+
+    # On Homebrew installs:
     ARCHFLAGS="-arch i386 -arch x86_64" sudo python setup-release.py py2app --includes sip
-    
+
     sudo hdiutil create -fs HFS+ -volname "Electrum-Rubycoin" -srcfolder dist/Electrum-Rubycoin.app dist/electrum-rubycoin-VERSION-macosx.dmg
 
 Windows
