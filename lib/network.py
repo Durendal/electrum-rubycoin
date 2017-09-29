@@ -44,11 +44,10 @@ from interface import Connection, Interface
 from blockchain import Blockchain
 from version import ELECTRUM_VERSION, PROTOCOL_VERSION
 
-DEFAULT_PORTS = {'t':'5018', 's':'5018'}
+DEFAULT_PORTS = {'t':'5018', 's':'5019'}
 
 DEFAULT_SERVERS = {
     'rby-cce-1.coinomi.net': DEFAULT_PORTS
-    
 }
 
 def set_testnet():
