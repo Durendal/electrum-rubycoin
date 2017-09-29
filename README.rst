@@ -1,7 +1,7 @@
 Donations:
 ==========
-RBY: RN6GAnYY2d4AJVd9CKF4nnnZpxLZyCgsYb
-BTC: 19kaDYhRLYrQpgbnuGeysGKQ7d9FB25ot1
+  RBY: RN6GAnYY2d4AJVd9CKF4nnnZpxLZyCgsYb
+  BTC: 19kaDYhRLYrQpgbnuGeysGKQ7d9FB25ot1
 
 
 Electrum-Rubycoin - Lightweight Rubycoin client
