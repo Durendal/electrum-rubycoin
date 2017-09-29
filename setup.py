@@ -79,6 +79,6 @@ setup(
     description="Lightweight rubycoin Wallet",
     author="dev0tion",
     license="MIT Licence",
-    url="http://www.rubycoinplatform.com",
+    url="http://www.rubycoin.org",
     long_description="""Lightweight rubycoin Wallet"""
 )
