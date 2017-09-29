@@ -44,13 +44,11 @@ from interface import Connection, Interface
 from blockchain import Blockchain
 from version import ELECTRUM_VERSION, PROTOCOL_VERSION
 
-DEFAULT_PORTS = {'t':'5937', 's':'5938'}
+DEFAULT_PORTS = {'t':'5018', 's':'5018'}
 
 DEFAULT_SERVERS = {
-    'rby-cce-1.coinomi.net': {'t':'5018', 's':'5018'},
-    '127.0.0.1': {'t':'8011', 's':'8011'},
-    'localhost': DEFAULT_PORTS
-    #'electrum2.rubycoinplatform.com': DEFAULT_PORTS,
+    'rby-cce-1.coinomi.net': DEFAULT_PORTS
+    
 }
 
 def set_testnet():
