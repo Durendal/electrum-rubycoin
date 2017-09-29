@@ -12,9 +12,9 @@ Electrum-Rubycoin - Lightweight Rubycoin client
 
   Licence: MIT Licence
   Original Author: Thomas Voegtlin
-  Port Maintainer: dev0tion
+  Port Maintainer: Durendal
   Language: Python
-  Homepage: https://www.rubycoinplatform.com
+  Homepage: https://www.rubycoin.org
 
 
 
