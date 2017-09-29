@@ -42,7 +42,7 @@ ADDRTYPE_P2PKH = 60
 ADDRTYPE_P2SH = 85
 XPRV_HEADER = "0488b2dd"
 XPUB_HEADER = "0488c21e"
-HEADERS_URL = None #"https://headers.electrum.org/blockchain_headers"
+#HEADERS_URL = None #"https://headers.electrum.org/blockchain_headers"
 
 #SERVERLIST = 'servers.json'
 #DEFAULT_PORTS = {'t':'55937', 's':'55938'}
@@ -415,7 +415,7 @@ def is_address(addr):
         addrtype, h = bc_address_to_hash_160(addr)
     except Exception:
         return False
-    if addrtype not in [63, 125]:
+    if addrtype not in [60, 85]:
         return False
     return addr == hash_160_to_bc_address(h, addrtype)
 
