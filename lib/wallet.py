@@ -533,7 +533,7 @@ class Abstract_Wallet(PrintError):
         return c, u, x
 
     def get_spendable_coins(self, exclude_frozen = True, domain = None):
-        return self.get_utxos(domain, exclude_frozen=exclide_frozen, mature=True)
+        return self.get_utxos(domain, exclude_frozen=exclude_frozen, mature=True)
 
     def get_utxos(self, domain = None, exclude_frozen = False, mature = False):
         coins = []
