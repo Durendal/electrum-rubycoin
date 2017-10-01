@@ -49,6 +49,7 @@ class Blockchain(util.PrintError):
             self.downloading_headers = False
             return
         self.downloading_headers = True
+        return
         t = threading.Thread(target = self.init_headers_file)
         t.daemon = True
         t.start()
@@ -91,19 +92,23 @@ class Blockchain(util.PrintError):
         return s
 
     def deserialize_header(self, s):
+
         hex_to_int = lambda s: int('0x' + s[::-1].encode('hex'), 16)
         h = {}
         h['version'] = hex_to_int(s[0:4])
         h['prev_block_hash'] = hash_encode(s[4:36])
         h['merkle_root'] = hash_encode(s[36:68])
         h['timestamp'] = hex_to_int(s[68:72])
+        #h['nTime'] = hex_to_int(s[68:72])
         h['bits'] = hex_to_int(s[72:76])
         h['nonce'] = hex_to_int(s[76:80])
+
         return h
 
     def hash_header(self, header):
         if header is None:
             return '0' * 64
+            #return "00000760e24f1ad47f7a6e912bc9ed2b9ce013fc85ba217da8b079762f6b0058"
         return hash_encode(Hash(self.serialize_header(header).decode('hex')))
 
     def path(self):
@@ -115,9 +120,9 @@ class Blockchain(util.PrintError):
             import urllib, socket
             socket.setdefaulttimeout(30)
             self.print_error("downloading ", rubycoin.HEADERS_URL)
-            #urllib.urlretrieve(rubycoin.HEADERS_URL, filename + '.tmp')
-            open(filename, "wb+").close()
-            #os.rename(filename + '.tmp', filename)
+            urllib.urlretrieve(rubycoin.HEADERS_URL, filename + '.tmp')
+            #open(filename, "wb+").close()
+            os.rename(filename + '.tmp', filename)
             self.print_error("done.")
         except Exception:
             self.print_error("download failed. creating file", filename)

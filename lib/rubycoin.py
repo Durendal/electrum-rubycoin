@@ -44,7 +44,7 @@ ADDRTYPE_P2SH = 85
 #XPUB_HEADER = "0488c21e"
 XPRV_HEADER = "0488ade4"
 XPUB_HEADER = "0488b21e"
-HEADERS_URL = None #"https://headers.electrum.org/blockchain_headers"
+HEADERS_URL = "" #"https://headers.electrum.org/blockchain_headers"
 
 #SERVERLIST = 'servers.json'
 #DEFAULT_PORTS = {'t':'55937', 's':'55938'}

@@ -425,6 +425,7 @@ def parse_output(vds, i):
 def deserialize(raw):
     vds = BCDataStream()
     vds.write(raw.decode('hex'))
+
     d = {}
     start = vds.read_cursor
     d['version'] = vds.read_int32()
@@ -434,6 +435,7 @@ def deserialize(raw):
     n_vout = vds.read_compact_size()
     d['outputs'] = list(parse_output(vds,i) for i in xrange(n_vout))
     d['lockTime'] = vds.read_uint32()
+
     return d
 
 
@@ -515,6 +517,7 @@ class Transaction:
         self._inputs = d['inputs']
         self._outputs = [(x['type'], x['address'], x['value']) for x in d['outputs']]
         self.locktime = d['lockTime']
+
         return d
 
     @classmethod
@@ -628,26 +631,29 @@ class Transaction:
         self._outputs.sort(key = lambda o: (o[2], self.pay_script(o[0], o[1])))
 
     def serialize(self, for_sig=None):
-        inputs = self.inputs()
-        outputs = self.outputs()
-        time = self.time # bitspill
-        s = int_to_hex(1, 4)                                         # version
-        s += int_to_hex(time,4) # bitspill
-        s += var_int(len(inputs))                                    # number of inputs
-        for i, txin in enumerate(inputs):
-            s += self.serialize_input(txin, i, for_sig)
-        s += var_int(len(outputs))                                   # number of outputs
-        for output in outputs:
-            output_type, addr, amount = output
-            s += int_to_hex(amount, 8)                               # amount
-            script = self.pay_script(output_type, addr)
-            s += var_int(len(script)/2)                              #  script length
-            s += script                                              #  script
-        s += int_to_hex(self.locktime, 4)                            #  locktime
-        if for_sig is not None and for_sig != -1:
-            s += int_to_hex(1, 4)                                    #  hash type
-        return s
+        try:
+            inputs = self.inputs()
+            outputs = self.outputs()
+            time = self.time # bitspill
+            s = int_to_hex(1, 4)                                         # version
+            s += int_to_hex(time,4) # bitspill
+            s += var_int(len(inputs))                                    # number of inputs
+            for i, txin in enumerate(inputs):
+                s += self.serialize_input(txin, i, for_sig)
+            s += var_int(len(outputs))                                   # number of outputs
+            for output in outputs:
+                output_type, addr, amount = output
+                s += int_to_hex(amount, 8)                               # amount
+                script = self.pay_script(output_type, addr)
+                s += var_int(len(script)/2)                              #  script length
+                s += script                                              #  script
+            s += int_to_hex(self.locktime, 4)                            #  locktime
+            if for_sig is not None and for_sig != -1:
+                s += int_to_hex(1, 4)                                    #  hash type
 
+            return s
+        except:
+            raise WTFError("WTF")
     def tx_for_sig(self,i):
         return self.serialize(for_sig = i)
 
