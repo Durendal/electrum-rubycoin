@@ -29,6 +29,7 @@ import os
 import util
 import rubycoin
 from rubycoin import *
+from scrypt import scrypt_1024_1_1_80 as getPoWHash
 
 MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 
@@ -49,7 +50,6 @@ class Blockchain(util.PrintError):
             self.downloading_headers = False
             return
         self.downloading_headers = True
-        return
         t = threading.Thread(target = self.init_headers_file)
         t.daemon = True
         t.start()
@@ -72,10 +72,14 @@ class Blockchain(util.PrintError):
 
     def verify_chunk(self, index, data):
         num = len(data) / 80
+
         prev_header = None
+
         if index != 0:
             prev_header = self.read_header(index*2016 - 1)
+
         bits, target = self.get_target(index)
+
         for i in range(num):
             raw_header = data[i*80:(i+1) * 80]
             header = self.deserialize_header(raw_header)
@@ -83,12 +87,22 @@ class Blockchain(util.PrintError):
             prev_header = header
 
     def serialize_header(self, res):
-        s = int_to_hex(res.get('version'), 4) \
+
+        """s = int_to_hex(res.get('version'), 4) \
             + rev_hex(res.get('prev_block_hash')) \
             + rev_hex(res.get('merkle_root')) \
             + int_to_hex(int(res.get('timestamp')), 4) \
             + int_to_hex(int(res.get('bits')), 4) \
             + int_to_hex(int(res.get('nonce')), 4)
+        """
+        version = int_to_hex(res.get('version'), 4).strip()
+        prev_block_hash = rev_hex(res.get('prev_block_hash')).strip()
+        merkle_root = rev_hex(res.get('merkle_root'))
+        nTime = int_to_hex(int(res.get('timestamp')), 4)
+        nBits = int_to_hex(int(res.get('bits')), 4)
+        nonce = int_to_hex(int(res.get('nonce')), 4)
+        s = version + prev_block_hash + merkle_root + nTime + nBits + nonce
+
         return s
 
     def deserialize_header(self, s):
@@ -99,17 +113,22 @@ class Blockchain(util.PrintError):
         h['prev_block_hash'] = hash_encode(s[4:36])
         h['merkle_root'] = hash_encode(s[36:68])
         h['timestamp'] = hex_to_int(s[68:72])
-        #h['nTime'] = hex_to_int(s[68:72])
         h['bits'] = hex_to_int(s[72:76])
         h['nonce'] = hex_to_int(s[76:80])
 
         return h
-
+    def pow_hash_header(self, header):
+        return rev_hex(getPoWHash(self.serialize_header(header).decode('hex')).encode('hex'))
     def hash_header(self, header):
+
         if header is None:
             return '0' * 64
-            #return "00000760e24f1ad47f7a6e912bc9ed2b9ce013fc85ba217da8b079762f6b0058"
-        return hash_encode(Hash(self.serialize_header(header).decode('hex')))
+        if header['version'] > 6:
+            new_hash = hash_encode(Hash(self.serialize_header(header).decode("hex")))
+        else:
+            new_hash = self.pow_hash_header(header)
+
+        return new_hash
 
     def path(self):
         return util.get_headers_path(self.config)
@@ -121,7 +140,6 @@ class Blockchain(util.PrintError):
             socket.setdefaulttimeout(30)
             self.print_error("downloading ", rubycoin.HEADERS_URL)
             urllib.urlretrieve(rubycoin.HEADERS_URL, filename + '.tmp')
-            #open(filename, "wb+").close()
             os.rename(filename + '.tmp', filename)
             self.print_error("done.")
         except Exception:
@@ -140,6 +158,7 @@ class Blockchain(util.PrintError):
         self.set_local_height()
 
     def save_header(self, header):
+
         data = self.serialize_header(header).decode('hex')
         assert len(data) == 80
         height = header.get('block_height')

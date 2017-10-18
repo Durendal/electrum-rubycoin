@@ -47,7 +47,8 @@ from version import ELECTRUM_VERSION, PROTOCOL_VERSION
 DEFAULT_PORTS = {'t':'5018', 's':'5019'}
 
 DEFAULT_SERVERS = {
-    'rby-cce-1.coinomi.net': DEFAULT_PORTS
+    'rby-cce-1.coinomi.net': DEFAULT_PORTS,
+    'rby-cce-2.coinomi.net': DEFAULT_PORTS
 }
 
 def set_testnet():
